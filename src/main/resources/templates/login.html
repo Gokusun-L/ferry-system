@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>登录 - 轮渡码头客运管理系统</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<div class="auth-container">
+    <div class="auth-card">
+        <h2>⛴️ 轮渡码头客运管理系统</h2>
+        <p class="subtitle">用户登录</p>
+        <div class="form-group">
+            <label>用户名</label>
+            <input type="text" id="username" placeholder="请输入用户名">
+        </div>
+        <div class="form-group">
+            <label>密码</label>
+            <input type="password" id="password" placeholder="请输入密码">
+        </div>
+        <div class="error-msg" id="errorMsg"></div>
+        <button class="btn btn-primary btn-block" onclick="doLogin()">登录</button>
+        <div class="auth-footer">
+            <a th:href="@{/register}">还没有账号？注册</a>
+        </div>
+        <div class="demo-tip">
+            <p>测试账号（密码均为 123456）：</p>
+            <p>管理员：admin　售票员：seller1　乘客：zhangsan</p>
+        </div>
+    </div>
+</div>
+<script th:src="@{/js/common.js}"></script>
+<script>
+    function doLogin() {
+        var username = document.getElementById('username').value;
+        var password = document.getElementById('password').value;
+        if (!username || !password) {
+            showError('请输入用户名和密码');
+            return;
+        }
+        fetch('/login', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({username: username, password: password})
+        }).then(r => r.json()).then(res => {
+            if (res.code === 0) {
+                window.location.href = '/';
+            } else {
+                showError(res.msg);
+            }
+        });
+    }
+    function showError(msg) {
+        document.getElementById('errorMsg').textContent = msg;
+    }
+    document.getElementById('password').addEventListener('keyup', function(e) {
+        if (e.key === 'Enter') doLogin();
+    });
+</script>
+</body>
+</html>

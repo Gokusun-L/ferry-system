@@ -1,0 +1,9 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: content(~{::body})}">
+<body>
+<div id="pageContent">
+    <h2 th:text="'欢迎，' + ${user.name}">欢迎</h2>
+    <p style="margin-top:12px;color:#64748b;">请从左侧菜单选择功能模块。</p>
+</div>
+</body>
+</html>

@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: content(~{::body})}">
+<body>
+<div id="pageContent">
+    <div class="card">
+        <h3>检票</h3>
+        <div class="toolbar">
+            <div class="form-group"><input type="date" id="cDate" onchange="loadSchedules()"></div>
+            <div class="form-group">
+                <select id="cScheduleId" style="min-width:260px;"><option value="">请选择班次</option></select>
+            </div>
+            <div class="form-group"><input type="text" id="ticketNo" placeholder="输入船票编号或订单号" style="min-width:260px;"></div>
+            <button class="btn btn-primary" onclick="doCheckin()">检票</button>
+        </div>
+        <div id="checkinResult"></div>
+    </div>
+
+    <div class="card">
+        <h3>班次检票统计</h3>
+        <div class="form-group" style="max-width:260px;">
+            <select id="statScheduleId"><option value="">请选择班次</option></select>
+        </div>
+        <div id="checkinStats"></div>
+        <div id="checkinList"></div>
+    </div>
+</div>
+
+<script class="page-script">
+function loadSchedules() {
+    var date = document.getElementById('cDate').value;
+    var url = '/api/schedules?page=1&size=200' + (date ? '&date=' + date : '');
+    api(url).then(res => {
+        var list = (res.data.list || []).filter(s => s.status === 'SELLING' || s.status === 'DEPARTED' || s.status === 'FINISHED');
+        var html = '<option value="">请选择班次</option>';
+        list.forEach(s => {
+            html += '<option value="' + s.id + '">' + s.departTime + ' ' + (s.routeName || '') + '</option>';
+        });
+        document.getElementById('cScheduleId').innerHTML = html;
+        document.getElementById('statScheduleId').innerHTML = html;
+        document.getElementById('checkinStats').innerHTML = '';
+        document.getElementById('checkinList').innerHTML = '';
+    });
+}
+function doCheckin() {
+    var ticketNo = document.getElementById('ticketNo').value.trim();
+    var scheduleId = document.getElementById('cScheduleId').value;
+    if (!ticketNo) { alert('请输入船票编号或订单号'); return; }
+    api('/api/checkin', 'POST', {ticketNo: ticketNo, scheduleId: scheduleId}).then(res => {
+        var el = document.getElementById('checkinResult');
+        if (res.code === 0) {
+            el.innerHTML = '<p class="text-success">检票成功！</p>';
+            if (scheduleId) loadScheduleTickets();
+        } else {
+            el.innerHTML = '<p class="text-danger">检票失败：' + res.msg + '</p>';
+        }
+    });
+}
+document.getElementById('statScheduleId').addEventListener('change', loadScheduleTickets);
+function loadScheduleTickets() {
+    var id = document.getElementById('statScheduleId').value;
+    if (!id) { document.getElementById('checkinStats').innerHTML = ''; document.getElementById('checkinList').innerHTML = ''; return; }
+    api('/api/schedules/' + id + '/tickets').then(res => {
+        var tickets = res.data;
+        var valid = tickets.filter(t => t.status === 'PAID' || t.status === 'CHECKED');
+        var checked = valid.filter(t => t.status === 'CHECKED').length;
+        var total = valid.length;
+        var unchecked = total - checked;
+        document.getElementById('checkinStats').innerHTML =
+            '<div class="stat-grid">' +
+            '<div class="stat-card"><div class="label">已检票</div><div class="value">' + checked + '</div></div>' +
+            '<div class="stat-card"><div class="label">总售票</div><div class="value">' + total + '</div></div>' +
+            '<div class="stat-card"><div class="label">未检票</div><div class="value" style="color:#f59e0b">' + unchecked + '</div></div>' +
+            '</div>';
+        var html = '<table><thead><tr><th>船票号</th><th>座位</th><th>乘客</th><th>状态</th><th>检票时间</th><th>检票员</th></tr></thead><tbody>';
+        tickets.forEach(t => {
+            html += '<tr><td>' + t.ticketNo + '</td><td>' + t.seatNo + '</td><td>' + t.passengerName + '</td>' +
+                '<td>' + ticketStatusText(t.status, t.departTime) + '</td><td>' + (t.checkTime || '') + '</td><td>' + (t.checkerName || '') + '</td></tr>';
+        });
+        html += '</tbody></table>';
+        document.getElementById('checkinList').innerHTML = html;
+    });
+}
+document.getElementById('cDate').value = new Date().toISOString().slice(0, 10);
+loadSchedules();
+</script>
+</body>
+</html>

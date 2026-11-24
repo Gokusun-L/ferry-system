@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>注册 - 轮渡码头客运管理系统</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<div class="auth-container">
+    <div class="auth-card">
+        <h2>乘客注册</h2>
+        <div class="form-group">
+            <label>用户名</label>
+            <input type="text" id="username" placeholder="用户名">
+        </div>
+        <div class="form-group">
+            <label>密码</label>
+            <input type="password" id="password" placeholder="密码">
+        </div>
+        <div class="form-group">
+            <label>姓名</label>
+            <input type="text" id="name" placeholder="姓名">
+        </div>
+        <div class="form-group">
+            <label>手机号</label>
+            <input type="text" id="phone" placeholder="手机号">
+        </div>
+        <div class="form-group">
+            <label>身份证号</label>
+            <input type="text" id="idCard" placeholder="身份证号">
+        </div>
+        <div class="error-msg" id="errorMsg"></div>
+        <button class="btn btn-primary btn-block" onclick="doRegister()">注册</button>
+        <div class="auth-footer">
+            <a th:href="@{/login}">已有账号？登录</a>
+        </div>
+    </div>
+</div>
+<script th:src="@{/js/common.js}"></script>
+<script>
+    function doRegister() {
+        var body = {
+            username: document.getElementById('username').value,
+            password: document.getElementById('password').value,
+            name: document.getElementById('name').value,
+            phone: document.getElementById('phone').value,
+            idCard: document.getElementById('idCard').value
+        };
+        fetch('/register', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(body)
+        }).then(r => r.json()).then(res => {
+            if (res.code === 0) {
+                alert('注册成功，请登录');
+                window.location.href = '/login';
+            } else {
+                document.getElementById('errorMsg').textContent = res.msg;
+            }
+        });
+    }
+</script>
+</body>
+</html>

@@ -1,0 +1,22 @@
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/ferry_test?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+    username: root
+    password: ""
+  thymeleaf:
+    cache: false
+  main:
+    # 测试时允许 bean 覆盖，便于替换定时任务等
+    allow-bean-definition-overriding: true
+
+mybatis:
+  mapper-locations: classpath:mapper/*.xml
+  type-aliases-package: com.ferry.entity
+  configuration:
+    map-underscore-to-camel-case: true
+
+logging:
+  level:
+    com.ferry: info
+    org.springframework.jdbc: info

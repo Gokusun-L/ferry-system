@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ferry.dao.OrderDao">
+
+    <sql id="joinSelect">
+        SELECT o.id, o.order_no, o.user_id, o.seller_id, o.schedule_id, o.total_amount, o.status, o.channel,
+               o.create_time, o.pay_time,
+               r.route_name, r.depart_port, r.arrive_port, sh.ship_name, s.depart_time
+        FROM orders o
+        JOIN schedule s ON o.schedule_id = s.id
+        JOIN route r ON s.route_id = r.id
+        JOIN ship sh ON s.ship_id = sh.id
+    </sql>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO orders (order_no, user_id, seller_id, schedule_id, total_amount, status, channel)
+        VALUES (#{orderNo}, #{userId}, #{sellerId}, #{scheduleId}, #{totalAmount}, #{status}, #{channel})
+    </insert>
+
+    <select id="findById" resultType="Order">
+        <include refid="joinSelect"/>
+        WHERE o.id = #{id}
+    </select>
+
+    <select id="findByOrderNo" resultType="Order">
+        <include refid="joinSelect"/>
+        WHERE o.order_no = #{orderNo}
+    </select>
+
+    <update id="updateStatus">
+        UPDATE orders SET status = #{status} WHERE id = #{id}
+    </update>
+
+    <update id="cancelIfUnpaid">
+        UPDATE orders SET status = 'CANCELLED' WHERE id = #{id} AND status = 'UNPAID'
+    </update>
+
+    <update id="markPaid">
+        UPDATE orders SET status = 'PAID', pay_time = #{payTime} WHERE id = #{id} AND status = 'UNPAID'
+    </update>
+
+    <update id="updateAmountAndSchedule">
+        UPDATE orders SET total_amount = #{totalAmount}, schedule_id = #{scheduleId} WHERE id = #{id}
+    </update>
+
+    <update id="finishCheckedBySchedule">
+        UPDATE orders SET status = 'FINISHED' WHERE schedule_id = #{scheduleId} AND status = 'CHECKED'
+    </update>
+
+    <select id="listByUser" resultType="Order">
+        <include refid="joinSelect"/>
+        WHERE o.user_id = #{userId}
+        <if test="status != null and status != ''">AND o.status = #{status}</if>
+        ORDER BY o.create_time DESC
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <select id="countByUser" resultType="long">
+        SELECT COUNT(*) FROM orders WHERE user_id = #{userId}
+        <if test="status != null and status != ''">AND status = #{status}</if>
+    </select>
+
+    <select id="search" resultType="Order">
+        <include refid="joinSelect"/>
+        <where>
+            <if test="date != null and date != ''">AND DATE(o.create_time) = #{date}</if>
+            <if test="scheduleId != null">AND o.schedule_id = #{scheduleId}</if>
+            <if test="passengerName != null and passengerName != ''">
+                AND o.id IN (SELECT order_id FROM ticket WHERE passenger_name LIKE CONCAT('%', #{passengerName}, '%'))
+            </if>
+            <if test="sellerId != null">AND o.seller_id = #{sellerId}</if>
+        </where>
+        ORDER BY o.create_time DESC
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <select id="countSearch" resultType="long">
+        SELECT COUNT(*) FROM orders o
+        <where>
+            <if test="date != null and date != ''">AND DATE(o.create_time) = #{date}</if>
+            <if test="scheduleId != null">AND o.schedule_id = #{scheduleId}</if>
+            <if test="passengerName != null and passengerName != ''">
+                AND o.id IN (SELECT order_id FROM ticket WHERE passenger_name LIKE CONCAT('%', #{passengerName}, '%'))
+            </if>
+            <if test="sellerId != null">AND o.seller_id = #{sellerId}</if>
+        </where>
+    </select>
+
+    <select id="listExpiredUnpaid" resultType="Order">
+        SELECT id, order_no, user_id, seller_id, schedule_id, total_amount, status, channel, create_time, pay_time
+        FROM orders
+        WHERE status = 'UNPAID' AND create_time &lt; #{now}
+    </select>
+
+    <select id="listPaidBySchedule" resultType="Order">
+        SELECT id, order_no, user_id, seller_id, schedule_id, total_amount, status, channel, create_time, pay_time
+        FROM orders WHERE schedule_id = #{scheduleId} AND status IN ('PAID','CHECKED')
+    </select>
+
+    <select id="listPaidBySeller" resultType="Order">
+        SELECT id, order_no, user_id, seller_id, schedule_id, total_amount, status, channel, create_time, pay_time
+        FROM orders WHERE seller_id = #{sellerId} AND status IN ('PAID','CHECKED','FINISHED')
+    </select>
+
+</mapper>

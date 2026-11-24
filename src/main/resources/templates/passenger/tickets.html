@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: content(~{::body})}">
+<body>
+<div id="pageContent">
+    <div class="card">
+        <h3>我的船票</h3>
+        <table>
+            <thead><tr><th>船票号</th><th>航线</th><th>发船时间</th><th>座位</th><th>乘客</th><th>状态</th><th>操作</th></tr></thead>
+            <tbody id="ticketTbody"></tbody>
+        </table>
+    </div>
+</div>
+
+<div class="modal-mask" id="ticketModal">
+    <div class="modal" style="text-align:center;">
+        <h3>电子船票</h3>
+        <div id="ticketContent" style="border:2px dashed #333;padding:20px;"></div>
+        <button class="btn" onclick="closeModal('ticketModal')">关闭</button>
+    </div>
+</div>
+
+<script class="page-script">
+function loadTickets() {
+    api('/api/tickets/my').then(res => {
+        var html = '';
+        res.data.forEach(t => {
+            html += '<tr><td>' + t.ticketNo + '</td><td>' + t.routeName + '</td><td>' + (t.departTime || '') + '</td>' +
+                '<td>' + t.seatNo + '</td><td>' + t.passengerName + '</td><td>' + ticketStatusText(t.status, t.departTime) + '</td>' +
+                '<td><button class="btn btn-sm btn-primary" onclick="showTicket(' + t.id + ')">查看</button></td></tr>';
+        });
+        document.getElementById('ticketTbody').innerHTML = html;
+    });
+}
+function showTicket(id) {
+    api('/api/tickets/my').then(res => {
+        var t = res.data.find(x => x.id === id);
+        var html = '<h3 style="margin-bottom:10px;">⛴️ 电子船票</h3>' +
+            '<p style="font-size:20px;">' + t.routeName + '</p>' +
+            '<p>' + t.departPort + ' → ' + t.arrivePort + '</p>' +
+            '<p>乘客：' + t.passengerName + '</p><p>座位：' + t.seatNo + '</p>' +
+            '<p>发船时间：' + (t.departTime || '') + '</p>' +
+            '<p>票号：' + t.ticketNo + '</p>' +
+            '<p>状态：' + ticketStatusText(t.status, t.departTime) + '</p>' +
+            '<div style="margin-top:10px;font-size:40px;">▦▦▦▦▦▦</div>' +
+            '<p style="font-size:12px;color:#999;">[ 二维码占位 ]</p>';
+        document.getElementById('ticketContent').innerHTML = html;
+        document.getElementById('ticketModal').classList.add('show');
+    });
+}
+function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+loadTickets();
+</script>
+</body>
+</html>

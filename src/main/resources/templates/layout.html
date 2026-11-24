@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:fragment="content(pageBody)">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${title} ?: '轮渡码头客运管理系统'">轮渡码头客运管理系统</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <script th:src="@{/js/common.js}"></script>
+    <!-- 当前登录用户ID，供前端区分「本人锁定」与「他人锁定」的座位 -->
+    <script th:inline="javascript">
+        window.CURRENT_USER_ID = /*[[${user != null ? user.id : null}]]*/ null;
+    </script>
+</head>
+<body>
+<div class="layout">
+    <aside class="sidebar">
+        <div class="brand">⛴️ 轮渡码头客运系统</div>
+        <nav>
+            <!-- 管理员菜单 -->
+            <div th:if="${user.role == 'ADMIN'}">
+                <a th:href="@{/admin/users}">用户管理</a>
+                <a th:href="@{/admin/routes}">航线管理</a>
+                <a th:href="@{/admin/ships}">船舶管理</a>
+                <a th:href="@{/admin/schedules}">班次管理</a>
+                <a th:href="@{/admin/orders}">订单管理</a>
+                <a th:href="@{/admin/stats}">统计报表</a>
+            </div>
+            <!-- 售票员菜单 -->
+            <div th:if="${user.role == 'SELLER'}">
+                <a th:href="@{/seller/sell}">线下售票</a>
+                <a th:href="@{/seller/checkin}">检票</a>
+                <a th:href="@{/seller/refund}">退票处理</a>
+                <a th:href="@{/seller/stats}">我的业绩</a>
+            </div>
+            <!-- 乘客菜单 -->
+            <div th:if="${user.role == 'PASSENGER'}">
+                <a th:href="@{/passenger/search}">班次查询</a>
+                <a th:href="@{/passenger/orders}">我的订单</a>
+                <a th:href="@{/passenger/tickets}">我的船票</a>
+            </div>
+            <a th:href="@{/profile}">个人中心</a>
+        </nav>
+    </aside>
+    <div class="main">
+        <header class="topbar">
+            <div class="title" th:text="${title} ?: '首页'">首页</div>
+            <div class="user-info">
+                <a th:href="@{/notifications}" class="bell-link" title="消息通知">🔔<span id="unreadBadge" class="unread-badge" style="display:none;">0</span></a>
+                <span th:text="${user.name}">用户</span>
+                <span class="role-tag" th:text="${user.role == 'ADMIN' ? '管理员' : (user.role == 'SELLER' ? '售票员' : '乘客')}">角色</span>
+                <a href="javascript:void(0)" onclick="logout()" class="logout-btn">退出</a>
+            </div>
+        </header>
+        <main class="content">
+            <th:block th:replace="${pageBody}"></th:block>
+        </main>
+    </div>
+</div>
+<script>
+(function () {
+    function loadUnread() {
+        fetch('/api/notifications/unread-count').then(function (r) { return r.json(); }).then(function (res) {
+            if (res.code !== 0) return;
+            var el = document.getElementById('unreadBadge');
+            if (!el) return;
+            var n = res.data || 0;
+            if (n > 0) { el.textContent = n > 99 ? '99+' : n; el.style.display = 'inline-block'; }
+            else { el.style.display = 'none'; }
+        }).catch(function () {});
+    }
+    loadUnread();
+    setInterval(loadUnread, 60000);
+})();
+</script>
+</body>
+</html>

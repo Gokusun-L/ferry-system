@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: content(~{::body})}">
+<body>
+<div id="pageContent">
+    <div class="card">
+        <h3>退票处理</h3>
+        <p style="color:#64748b;margin-bottom:12px;">输入订单号查询已支付订单，为乘客办理退票。</p>
+        <div class="toolbar">
+            <div class="form-group"><input type="text" id="orderNo" placeholder="输入订单号" style="min-width:300px;"></div>
+            <button class="btn btn-primary" onclick="searchOrder()">查询</button>
+        </div>
+        <div id="refundResult"></div>
+    </div>
+</div>
+
+<script class="page-script">
+var currentOrder = null;
+function searchOrder() {
+    var orderNo = document.getElementById('orderNo').value.trim();
+    if (!orderNo) { alert('请输入订单号'); return; }
+    api('/api/orders/no/' + encodeURIComponent(orderNo)).then(res => {
+        if (res.code !== 0) {
+            document.getElementById('refundResult').innerHTML = '<p class="text-danger">' + res.msg + '</p>';
+            currentOrder = null;
+            return;
+        }
+        var order = res.data.order;
+        var tickets = res.data.tickets;
+        currentOrder = order;
+        var html = '<p><b>订单号：</b>' + order.orderNo + '　<b>航线：</b>' + order.routeName +
+            '　<b>发船：</b>' + (order.departTime || '') + '　<b>金额：</b>¥' + order.totalAmount +
+            '　<b>状态：</b>' + statusText(order.status) + '</p>' +
+            '<table><thead><tr><th>船票号</th><th>座位</th><th>乘客</th><th>身份证</th><th>票价</th><th>状态</th></tr></thead><tbody>';
+        tickets.forEach(t => {
+            html += '<tr><td>' + t.ticketNo + '</td><td>' + t.seatNo + '</td><td>' + t.passengerName + '</td>' +
+                '<td>' + t.idCard + '</td><td>¥' + t.price + '</td><td>' + ticketStatusText(t.status, order.departTime) + '</td></tr>';
+        });
+        html += '</tbody></table>';
+        var canRefund = tickets.some(t => t.status === 'PAID') && !tickets.some(t => t.status === 'CHECKED');
+        html += '<div style="margin-top:12px;">' +
+            (canRefund ? '<button class="btn btn-danger" onclick="doRefund()">办理退票</button>' : '<span class="text-danger">当前订单不可退票（未支付/已检票/已退票）</span>') +
+            '</div><p style="color:#64748b;margin-top:8px;">退票规则：发船前2小时以上全额退款，2小时内扣除20%手续费，发船后不可退。</p>';
+        document.getElementById('refundResult').innerHTML = html;
+    });
+}
+function doRefund() {
+    if (!currentOrder) return;
+    var reason = prompt('请输入退票原因：');
+    if (reason === null) return;
+    if (!confirm('确认为订单 ' + currentOrder.orderNo + ' 办理退票？')) return;
+    api('/api/orders/' + currentOrder.id + '/refund', 'POST', {reason: reason}).then(res => {
+        if (res.code === 0) { alert('退票成功'); searchOrder(); }
+        else alert(res.msg);
+    });
+}
+</script>
+</body>
+</html>

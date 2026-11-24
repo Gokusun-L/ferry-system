@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ferry.dao.RouteDao">
+
+    <sql id="cols">
+        id, route_name, depart_port, arrive_port, duration, description, deleted, created_at, updated_at
+    </sql>
+
+    <select id="search" resultType="Route">
+        SELECT <include refid="cols"/> FROM route
+        <where>
+            deleted = 0
+            <if test="routeName != null and routeName != ''">
+                AND route_name LIKE CONCAT('%', #{routeName}, '%')
+            </if>
+            <if test="departPort != null and departPort != ''">
+                AND depart_port LIKE CONCAT('%', #{departPort}, '%')
+            </if>
+            <if test="arrivePort != null and arrivePort != ''">
+                AND arrive_port LIKE CONCAT('%', #{arrivePort}, '%')
+            </if>
+        </where>
+        ORDER BY id DESC
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <select id="count" resultType="long">
+        SELECT COUNT(*) FROM route
+        <where>
+            deleted = 0
+            <if test="routeName != null and routeName != ''">
+                AND route_name LIKE CONCAT('%', #{routeName}, '%')
+            </if>
+            <if test="departPort != null and departPort != ''">
+                AND depart_port LIKE CONCAT('%', #{departPort}, '%')
+            </if>
+            <if test="arrivePort != null and arrivePort != ''">
+                AND arrive_port LIKE CONCAT('%', #{arrivePort}, '%')
+            </if>
+        </where>
+    </select>
+
+    <select id="findById" resultType="Route">
+        SELECT <include refid="cols"/> FROM route WHERE id = #{id}
+    </select>
+
+    <select id="listAll" resultType="Route">
+        SELECT <include refid="cols"/> FROM route WHERE deleted = 0 ORDER BY id
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO route (route_name, depart_port, arrive_port, duration, description)
+        VALUES (#{routeName}, #{departPort}, #{arrivePort}, #{duration}, #{description})
+    </insert>
+
+    <update id="update">
+        UPDATE route
+        SET route_name = #{routeName}, depart_port = #{departPort}, arrive_port = #{arrivePort},
+            duration = #{duration}, description = #{description}
+        WHERE id = #{id}
+    </update>
+
+    <update id="logicDelete">
+        UPDATE route SET deleted = 1 WHERE id = #{id}
+    </update>
+
+    <select id="countSameRoute" resultType="int">
+        SELECT COUNT(*) FROM route
+        WHERE deleted = 0 AND depart_port = #{departPort} AND arrive_port = #{arrivePort}
+          AND route_name = #{routeName}
+        <if test="excludeId != null">AND id != #{excludeId}</if>
+    </select>
+
+    <select id="countUnfinishedSchedule" resultType="int">
+        SELECT COUNT(*) FROM schedule
+        WHERE route_id = #{routeId} AND deleted = 0 AND status IN ('PENDING','SELLING','DEPARTED')
+    </select>
+
+</mapper>

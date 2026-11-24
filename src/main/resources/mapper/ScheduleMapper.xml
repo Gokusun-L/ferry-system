@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ferry.dao.ScheduleDao">
+
+    <sql id="joinSelect">
+        SELECT s.id, s.route_id, s.ship_id, s.depart_time, s.arrive_time, s.price, s.status, s.sold_count, s.deleted,
+               r.route_name, r.depart_port, r.arrive_port,
+               sh.ship_name, sh.ship_type, sh.total_seats,
+               (sh.total_seats - s.sold_count) AS remaining_seats
+        FROM schedule s
+        JOIN route r ON s.route_id = r.id
+        JOIN ship sh ON s.ship_id = sh.id
+    </sql>
+
+    <select id="search" resultType="Schedule">
+        <include refid="joinSelect"/>
+        <where>
+            s.deleted = 0
+            <if test="routeId != null">AND s.route_id = #{routeId}</if>
+            <if test="shipId != null">AND s.ship_id = #{shipId}</if>
+            <if test="date != null and date != ''">AND DATE(s.depart_time) = #{date}</if>
+            <if test="status != null and status != ''">AND s.status = #{status}</if>
+        </where>
+        ORDER BY s.depart_time
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <select id="count" resultType="long">
+        SELECT COUNT(*) FROM schedule s
+        <where>
+            s.deleted = 0
+            <if test="routeId != null">AND s.route_id = #{routeId}</if>
+            <if test="shipId != null">AND s.ship_id = #{shipId}</if>
+            <if test="date != null and date != ''">AND DATE(s.depart_time) = #{date}</if>
+            <if test="status != null and status != ''">AND s.status = #{status}</if>
+        </where>
+    </select>
+
+    <select id="findById" resultType="Schedule">
+        <include refid="joinSelect"/>
+        WHERE s.id = #{id}
+    </select>
+
+    <select id="findByIdForUpdate" resultType="Schedule">
+        SELECT id, route_id, ship_id, depart_time, arrive_time, price, status, sold_count, deleted
+        FROM schedule WHERE id = #{id} FOR UPDATE
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO schedule (route_id, ship_id, depart_time, arrive_time, price, status)
+        VALUES (#{routeId}, #{shipId}, #{departTime}, #{arriveTime}, #{price}, #{status})
+    </insert>
+
+    <insert id="insertBatch" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO schedule (route_id, ship_id, depart_time, arrive_time, price, status) VALUES
+        <foreach collection="list" item="s" separator=",">
+            (#{s.routeId}, #{s.shipId}, #{s.departTime}, #{s.arriveTime}, #{s.price}, #{s.status})
+        </foreach>
+    </insert>
+
+    <update id="update">
+        UPDATE schedule
+        SET depart_time = #{departTime}, arrive_time = #{arriveTime}, price = #{price}, ship_id = #{shipId}
+        WHERE id = #{id}
+    </update>
+
+    <update id="updateStatus">
+        UPDATE schedule SET status = #{status} WHERE id = #{id}
+    </update>
+
+    <update id="logicDelete">
+        UPDATE schedule SET deleted = 1 WHERE id = #{id}
+    </update>
+
+    <update id="incrementSold">
+        UPDATE schedule SET sold_count = sold_count + #{count} WHERE id = #{id}
+    </update>
+
+    <update id="decrementSold">
+        UPDATE schedule SET sold_count = GREATEST(sold_count - #{count}, 0) WHERE id = #{id}
+    </update>
+
+    <select id="countConflict" resultType="int">
+        SELECT COUNT(*) FROM schedule
+        WHERE ship_id = #{shipId} AND deleted = 0
+          AND status IN ('PENDING','SELLING')
+          AND depart_time &lt; #{arriveTime}
+          AND arrive_time &gt; #{departTime}
+        <if test="excludeId != null">AND id != #{excludeId}</if>
+    </select>
+
+    <select id="countUnfinishedOrder" resultType="int">
+        SELECT COUNT(*) FROM orders
+        WHERE schedule_id = #{scheduleId} AND status IN ('UNPAID','PAID','CHECKED')
+    </select>
+
+    <select id="listForPortSearch" resultType="Schedule">
+        <include refid="joinSelect"/>
+        WHERE s.deleted = 0 AND s.status = 'SELLING'
+          AND r.deleted = 0
+        <if test="departPort != null and departPort != ''">AND r.depart_port = #{departPort}</if>
+        <if test="arrivePort != null and arrivePort != ''">AND r.arrive_port = #{arrivePort}</if>
+        <if test="date != null and date != ''">AND DATE(s.depart_time) = #{date}</if>
+        ORDER BY s.depart_time
+    </select>
+
+    <select id="listDepartedUnfinished" resultType="Schedule">
+        SELECT id, route_id, ship_id, depart_time, arrive_time, price, status, sold_count, deleted
+        FROM schedule
+        WHERE deleted = 0 AND status = 'DEPARTED' AND arrive_time &lt; NOW()
+    </select>
+
+    <select id="listSellingToDepart" resultType="Schedule">
+        SELECT id, route_id, ship_id, depart_time, arrive_time, price, status, sold_count, deleted
+        FROM schedule
+        WHERE deleted = 0 AND status = 'SELLING' AND depart_time &lt;= #{now}
+    </select>
+
+</mapper>

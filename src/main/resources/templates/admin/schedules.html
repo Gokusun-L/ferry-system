@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: content(~{::body})}">
+<body>
+<div id="pageContent">
+    <div class="card">
+        <h3>班次管理</h3>
+        <div class="toolbar">
+            <div class="form-group"><select id="sRouteId"><option value="">全部航线</option></select></div>
+            <div class="form-group"><select id="sShipId"><option value="">全部船舶</option></select></div>
+            <div class="form-group"><input type="date" id="sDate"></div>
+            <div class="form-group">
+                <select id="sStatus">
+                    <option value="">全部状态</option>
+                    <option value="PENDING">待发布</option>
+                    <option value="SELLING">售票中</option>
+                    <option value="DEPARTED">已发船</option>
+                    <option value="FINISHED">已完成</option>
+                    <option value="CANCELLED">已取消</option>
+                </select>
+            </div>
+            <button class="btn btn-primary" onclick="loadSchedules(1)">搜索</button>
+            <button class="btn btn-success" onclick="openEdit()">新增班次</button>
+            <button class="btn btn-warning" onclick="openBatch()">批量生成</button>
+        </div>
+        <table>
+            <thead>
+            <tr><th>ID</th><th>航线</th><th>船舶</th><th>发船时间</th><th>到达时间</th><th>票价</th><th>状态</th><th>余票</th><th>操作</th></tr>
+            </thead>
+            <tbody id="scheduleTbody"></tbody>
+        </table>
+        <div class="pagination" id="schedulePagination"></div>
+    </div>
+</div>
+
+<div class="modal-mask" id="editModal">
+    <div class="modal">
+        <h3 id="editModalTitle">新增班次</h3>
+        <div class="form-group"><label>航线</label><select id="eRouteId"></select></div>
+        <div class="form-group"><label>船舶</label><select id="eShipId"></select></div>
+        <div class="form-group"><label>发船时间</label><input type="datetime-local" id="eDepartTime"></div>
+        <div class="form-group"><label>票价(元)</label><input type="number" step="0.01" id="ePrice"></div>
+        <button class="btn btn-primary" onclick="saveSchedule()">保存</button>
+        <button class="btn" onclick="closeModal('editModal')">取消</button>
+    </div>
+</div>
+
+<div class="modal-mask" id="batchModal">
+    <div class="modal">
+        <h3>批量生成班次</h3>
+        <div class="form-group"><label>航线</label><select id="bRouteId"></select></div>
+        <div class="form-group"><label>船舶</label><select id="bShipId"></select></div>
+        <div class="form-row">
+            <div class="form-group"><label>开始日期</label><input type="date" id="bStartDate"></div>
+            <div class="form-group"><label>结束日期</label><input type="date" id="bEndDate"></div>
+        </div>
+        <div class="form-row">
+            <div class="form-group"><label>发船小时</label><input type="number" id="bHour" value="8" min="0" max="23"></div>
+            <div class="form-group"><label>发船分钟</label><input type="number" id="bMinute" value="0" min="0" max="59"></div>
+        </div>
+        <div class="form-group"><label>票价(元)</label><input type="number" step="0.01" id="bPrice"></div>
+        <button class="btn btn-primary" onclick="doBatch()">生成</button>
+        <button class="btn" onclick="closeModal('batchModal')">取消</button>
+    </div>
+</div>
+
+<div class="modal-mask" id="detailModal">
+    <div class="modal">
+        <h3>班次详情</h3>
+        <div id="scheduleDetail"></div>
+        <button class="btn" onclick="closeModal('detailModal')">关闭</button>
+    </div>
+</div>
+
+<script class="page-script">
+var page = 1;
+var editId = null;
+function loadOptions() {
+    api('/api/routes/all').then(res => {
+        var html = '<option value="">全部航线</option>';
+        res.data.forEach(r => { html += '<option value="' + r.id + '">' + r.routeName + '</option>'; });
+        document.getElementById('sRouteId').innerHTML = html;
+        document.getElementById('eRouteId').innerHTML = res.data.map(r => '<option value="' + r.id + '">' + r.routeName + '</option>').join('');
+        document.getElementById('bRouteId').innerHTML = res.data.map(r => '<option value="' + r.id + '">' + r.routeName + '</option>').join('');
+    });
+    api('/api/ships/all').then(res => {
+        var html = '<option value="">全部船舶</option>';
+        res.data.forEach(s => { html += '<option value="' + s.id + '">' + s.shipName + '</option>'; });
+        document.getElementById('sShipId').innerHTML = html;
+        document.getElementById('eShipId').innerHTML = res.data.map(s => '<option value="' + s.id + '">' + s.shipName + '</option>').join('');
+        document.getElementById('bShipId').innerHTML = res.data.map(s => '<option value="' + s.id + '">' + s.shipName + '</option>').join('');
+    });
+}
+function loadSchedules(p) {
+    page = p || 1;
+    var params = new URLSearchParams({
+        page: page, size: 10,
+        routeId: document.getElementById('sRouteId').value,
+        shipId: document.getElementById('sShipId').value,
+        date: document.getElementById('sDate').value,
+        status: document.getElementById('sStatus').value
+    });
+    fetch('/api/schedules?' + params).then(r => r.json()).then(res => {
+        var html = '';
+        res.data.list.forEach(s => {
+            var editable = s.status === 'PENDING' || s.status === 'SELLING';
+            var ops = '<button class="btn btn-sm btn-primary" onclick="showDetail(' + s.id + ')">详情</button> ';
+            if (s.status === 'PENDING') {
+                ops += '<button class="btn btn-sm btn-success" onclick="publishSchedule(' + s.id + ')">发布</button> ';
+            }
+            if (editable) {
+                ops += '<button class="btn btn-sm btn-primary" onclick="openEdit(' + s.id + ')">编辑</button> ';
+                ops += '<button class="btn btn-sm btn-warning" onclick="cancelSchedule(' + s.id + ')">取消</button> ';
+            }
+            ops += '<button class="btn btn-sm btn-danger" onclick="delSchedule(' + s.id + ')">删除</button>';
+            html += '<tr><td>' + s.id + '</td><td>' + s.routeName + '</td><td>' + s.shipName + '</td>' +
+                '<td>' + s.departTime + '</td><td>' + s.arriveTime + '</td><td>' + s.price + '</td>' +
+                '<td>' + statusText(s.status) + '</td><td>' + s.remainingSeats + '</td>' +
+                '<td>' + ops + '</td></tr>';
+        });
+        document.getElementById('scheduleTbody').innerHTML = html;
+        renderPagination('schedulePagination', page, res.data.total, 10, loadSchedules);
+    });
+}
+function openEdit(id) {
+    editId = id || null;
+    document.getElementById('editModalTitle').innerText = editId ? '编辑班次' : '新增班次';
+    if (id) {
+        api('/api/schedules/' + id).then(res => {
+            var s = res.data;
+            document.getElementById('eRouteId').value = s.routeId;
+            document.getElementById('eShipId').value = s.shipId;
+            document.getElementById('eDepartTime').value = (s.departTime || '').replace(' ', 'T').slice(0, 16);
+            document.getElementById('ePrice').value = s.price;
+            document.getElementById('editModal').classList.add('show');
+        });
+    } else {
+        document.getElementById('eDepartTime').value = '';
+        document.getElementById('ePrice').value = '';
+        document.getElementById('editModal').classList.add('show');
+    }
+}
+function saveSchedule() {
+    var body = {
+        routeId: document.getElementById('eRouteId').value,
+        shipId: document.getElementById('eShipId').value,
+        departTime: document.getElementById('eDepartTime').value,
+        price: document.getElementById('ePrice').value
+    };
+    var url = editId ? '/api/schedules/' + editId : '/api/schedules';
+    var method = editId ? 'PUT' : 'POST';
+    api(url, method, body).then(res => {
+        if (res.code === 0) { closeModal('editModal'); loadSchedules(page); }
+        else alert(res.msg);
+    });
+}
+function openBatch() { document.getElementById('batchModal').classList.add('show'); }
+function doBatch() {
+    var body = {
+        routeId: document.getElementById('bRouteId').value,
+        shipId: document.getElementById('bShipId').value,
+        startDate: document.getElementById('bStartDate').value,
+        endDate: document.getElementById('bEndDate').value,
+        hour: document.getElementById('bHour').value,
+        minute: document.getElementById('bMinute').value,
+        price: document.getElementById('bPrice').value
+    };
+    api('/api/schedules/batch', 'POST', body).then(res => {
+        if (res.code === 0) { alert('成功生成 ' + res.data.length + ' 个班次'); closeModal('batchModal'); loadSchedules(page); }
+        else alert(res.msg);
+    });
+}
+function publishSchedule(id) {
+    if (!confirm('确定发布该班次？发布后乘客即可购票。')) return;
+    api('/api/schedules/' + id + '/publish', 'POST').then(res => {
+        if (res.code === 0) loadSchedules(page); else alert(res.msg);
+    });
+}
+function cancelSchedule(id) {
+    if (!confirm('确定取消该班次？已购票乘客将自动退票。')) return;
+    api('/api/schedules/' + id + '/cancel', 'POST').then(res => {
+        if (res.code === 0) loadSchedules(page); else alert(res.msg);
+    });
+}
+function delSchedule(id) {
+    if (!confirm('确定删除该班次？')) return;
+    api('/api/schedules/' + id, 'DELETE').then(res => {
+        if (res.code === 0) loadSchedules(page); else alert(res.msg);
+    });
+}
+function showDetail(id) {
+    api('/api/schedules/' + id).then(res => {
+        if (res.code !== 0) { alert(res.msg); return; }
+        var s = res.data;
+        var rate = s.totalSeats > 0 ? ((s.soldCount || 0) * 100.0 / s.totalSeats).toFixed(1) : '0.0';
+        document.getElementById('scheduleDetail').innerHTML =
+            '<p><b>班次 ID：</b>' + s.id + '</p>' +
+            '<p><b>航线：</b>' + s.routeName + '（' + s.departPort + ' → ' + s.arrivePort + '）</p>' +
+            '<p><b>船舶：</b>' + s.shipName + '（' + (s.shipType || '-') + '）</p>' +
+            '<p><b>发船时间：</b>' + s.departTime + '</p>' +
+            '<p><b>到达时间：</b>' + s.arriveTime + '</p>' +
+            '<p><b>票价：</b>¥' + s.price + '</p>' +
+            '<p><b>状态：</b>' + statusText(s.status) + '</p>' +
+            '<p><b>已售/总座位：</b>' + (s.soldCount || 0) + ' / ' + s.totalSeats + '（上座率 ' + rate + '%）</p>' +
+            '<p><b>余票：</b>' + s.remainingSeats + '</p>';
+        document.getElementById('detailModal').classList.add('show');
+    });
+}
+function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+loadOptions();
+loadSchedules(1);
+</script>
+</body>
+</html>

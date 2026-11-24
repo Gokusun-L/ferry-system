@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ferry.dao.ScheduleSeatDao">
+
+    <insert id="insertBatch">
+        INSERT INTO schedule_seat (schedule_id, seat_no, status) VALUES
+        <foreach collection="list" item="s" separator=",">
+            (#{s.scheduleId}, #{s.seatNo}, #{s.status})
+        </foreach>
+    </insert>
+
+    <select id="listBySchedule" resultType="ScheduleSeat">
+        SELECT id, schedule_id, seat_no, status, order_id, lock_time, lock_user_id
+        FROM schedule_seat WHERE schedule_id = #{scheduleId}
+        ORDER BY seat_no
+    </select>
+
+    <select id="findByScheduleAndSeat" resultType="ScheduleSeat">
+        SELECT id, schedule_id, seat_no, status, order_id, lock_time, lock_user_id
+        FROM schedule_seat WHERE schedule_id = #{scheduleId} AND seat_no = #{seatNo}
+    </select>
+
+    <!-- 并发安全锁定：AVAILABLE 或同一用户已锁定的座位可锁 -->
+    <update id="lock">
+        UPDATE schedule_seat
+        SET status = 'LOCKED', order_id = #{orderId}, lock_user_id = #{lockUserId}, lock_time = #{lockTime}
+        WHERE schedule_id = #{scheduleId} AND seat_no = #{seatNo}
+          AND (status = 'AVAILABLE'
+               OR (status = 'LOCKED' AND lock_user_id = #{lockUserId} AND #{lockUserId} IS NOT NULL))
+    </update>
+
+    <update id="markSold">
+        UPDATE schedule_seat
+        SET status = 'SOLD', order_id = #{orderId}, lock_time = NULL, lock_user_id = NULL
+        WHERE schedule_id = #{scheduleId} AND seat_no = #{seatNo}
+          AND (status = 'LOCKED' AND order_id = #{orderId})
+    </update>
+
+    <update id="release">
+        UPDATE schedule_seat
+        SET status = 'AVAILABLE', order_id = NULL, lock_time = NULL, lock_user_id = NULL
+        WHERE schedule_id = #{scheduleId} AND seat_no = #{seatNo}
+    </update>
+
+    <update id="releaseForOrder">
+        UPDATE schedule_seat
+        SET status = 'AVAILABLE', order_id = NULL, lock_time = NULL, lock_user_id = NULL
+        WHERE schedule_id = #{scheduleId} AND seat_no = #{seatNo} AND order_id = #{orderId}
+    </update>
+
+    <update id="unlock">
+        UPDATE schedule_seat
+        SET status = 'AVAILABLE', order_id = NULL, lock_time = NULL, lock_user_id = NULL
+        WHERE schedule_id = #{scheduleId} AND seat_no = #{seatNo}
+          AND status = 'LOCKED' AND order_id IS NULL AND lock_user_id = #{lockUserId}
+    </update>
+
+    <update id="releaseByOrder">
+        UPDATE schedule_seat
+        SET status = 'AVAILABLE', order_id = NULL, lock_time = NULL, lock_user_id = NULL
+        WHERE order_id = #{orderId}
+    </update>
+
+    <select id="listExpiredLock" resultType="ScheduleSeat">
+        SELECT id, schedule_id, seat_no, status, order_id, lock_time, lock_user_id
+        FROM schedule_seat
+        WHERE status = 'LOCKED' AND lock_time &lt; #{now}
+    </select>
+
+    <update id="releaseExpiredLocks">
+        UPDATE schedule_seat
+        SET status = 'AVAILABLE', order_id = NULL, lock_time = NULL, lock_user_id = NULL
+        WHERE status = 'LOCKED' AND lock_time &lt; #{now}
+    </update>
+
+    <update id="releaseAllBySchedule">
+        UPDATE schedule_seat
+        SET status = 'AVAILABLE', order_id = NULL, lock_time = NULL, lock_user_id = NULL
+        WHERE schedule_id = #{scheduleId} AND status != 'AVAILABLE'
+    </update>
+
+    <delete id="deleteBySchedule">
+        DELETE FROM schedule_seat WHERE schedule_id = #{scheduleId}
+    </delete>
+
+    <select id="countAvailable" resultType="int">
+        SELECT COUNT(*) FROM schedule_seat WHERE schedule_id = #{scheduleId} AND status = 'AVAILABLE'
+    </select>
+
+</mapper>

@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: content(~{::body})}">
+<body>
+<div id="pageContent">
+    <div class="card">
+        <h3>我的订单</h3>
+        <div class="toolbar">
+            <div class="form-group">
+                <select id="sStatus">
+                    <option value="">全部</option>
+                    <option value="UNPAID">待支付</option>
+                    <option value="PAID">已支付</option>
+                    <option value="CHECKED">已检票</option>
+                    <option value="CANCELLED">已取消</option>
+                    <option value="REFUNDED">已退票</option>
+                </select>
+            </div>
+            <button class="btn btn-primary" onclick="loadOrders(1)">筛选</button>
+        </div>
+        <table>
+            <thead><tr><th>订单号</th><th>航线</th><th>发船时间</th><th>金额</th><th>状态</th><th>下单时间</th><th>操作</th></tr></thead>
+            <tbody id="orderTbody"></tbody>
+        </table>
+        <div class="pagination" id="orderPagination"></div>
+    </div>
+</div>
+
+<div class="modal-mask" id="detailModal">
+    <div class="modal">
+        <h3>订单详情</h3>
+        <div id="detailContent"></div>
+        <button class="btn" onclick="closeModal('detailModal')">关闭</button>
+    </div>
+</div>
+
+<div class="modal-mask" id="rescheduleModal">
+    <div class="modal" style="width:680px;">
+        <h3>改签</h3>
+        <input type="hidden" id="rsOrderId">
+        <div class="form-group"><label>选择要改签的船票</label><div id="rsTicketList"></div></div>
+        <div class="toolbar">
+            <div class="form-group"><label>新班次日期</label><input type="date" id="rsDate"></div>
+            <button class="btn btn-primary" onclick="searchRescheduleSchedules()">查询班次</button>
+        </div>
+        <div class="form-group"><label>新班次</label><select id="rsScheduleId" onchange="loadRescheduleSeats()"></select></div>
+        <div class="form-group"><label>新座位（灰=已售 黄=已锁）</label><div id="rsSeatMap" class="seat-map" style="grid-template-columns:repeat(4,1fr);max-width:100%;"></div></div>
+        <div id="rsSummary" style="color:#ef4444;margin-bottom:10px;"></div>
+        <button class="btn btn-primary" onclick="submitReschedule()">确认改签</button>
+        <button class="btn" onclick="closeModal('rescheduleModal')">取消</button>
+    </div>
+</div>
+
+<script class="page-script">
+var page = 1;
+function loadOrders(p) {
+    page = p || 1;
+    var params = new URLSearchParams({page: page, size: 10, status: document.getElementById('sStatus').value});
+    fetch('/api/orders/my?' + params).then(r => r.json()).then(res => {
+        var html = '';
+        res.data.list.forEach(o => {
+            var actions = '';
+            if (o.status === 'UNPAID') {
+                actions += '<button class="btn btn-sm btn-success" onclick="pay(' + o.id + ')">支付</button> ';
+                actions += '<button class="btn btn-sm btn-danger" onclick="cancel(' + o.id + ')">取消</button> ';
+            }
+            if (o.status === 'PAID') {
+                actions += '<button class="btn btn-sm btn-danger" onclick="refund(' + o.id + ')">退票</button> ';
+                actions += '<button class="btn btn-sm btn-warning" onclick="openReschedule(' + o.id + ')">改签</button> ';
+            }
+            actions += '<button class="btn btn-sm btn-primary" onclick="showDetail(' + o.id + ')">详情</button>';
+            html += '<tr><td>' + o.orderNo + '</td><td>' + o.routeName + '</td><td>' + (o.departTime || '') + '</td>' +
+                '<td>¥' + o.totalAmount + '</td><td>' + statusText(o.status) + '</td><td>' + o.createTime + '</td>' +
+                '<td>' + actions + '</td></tr>';
+        });
+        document.getElementById('orderTbody').innerHTML = html;
+        renderPagination('orderPagination', page, res.data.total, 10, loadOrders);
+    });
+}
+function pay(id) {
+    api('/api/orders/' + id + '/pay', 'POST').then(res => {
+        if (res.code === 0) { alert('支付成功'); loadOrders(page); } else alert(res.msg);
+    });
+}
+function cancel(id) {
+    if (!confirm('确定取消该订单？')) return;
+    api('/api/orders/' + id + '/cancel', 'POST').then(res => {
+        if (res.code === 0) loadOrders(page); else alert(res.msg);
+    });
+}
+function refund(id) {
+    var reason = prompt('请输入退票原因：');
+    if (reason === null) return;
+    api('/api/orders/' + id + '/refund', 'POST', {reason: reason}).then(res => {
+        if (res.code === 0) { alert('退票成功'); loadOrders(page); } else alert(res.msg);
+    });
+}
+var rsOrder = null;
+var rsTicketId = null;
+var rsSeat = null;
+function openReschedule(orderId) {
+    api('/api/orders/' + orderId).then(res => {
+        var order = res.data.order;
+        var tickets = res.data.tickets.filter(t => t.status === 'PAID');
+        if (tickets.length === 0) { alert('该订单没有可改签的船票'); return; }
+        rsOrder = order;
+        rsTicketId = tickets[0].id;
+        rsSeat = null;
+        document.getElementById('rsOrderId').value = orderId;
+        var html = '';
+        tickets.forEach((t, i) => {
+            html += '<label style="display:block;margin:4px 0;">' +
+                '<input type="radio" name="rsTicket" value="' + t.id + '" ' + (i === 0 ? 'checked' : '') +
+                ' onchange="rsTicketId=' + t.id + '"> ' +
+                t.ticketNo + '　座位 ' + t.seatNo + '　' + t.passengerName + '　¥' + t.price + '</label>';
+        });
+        document.getElementById('rsTicketList').innerHTML = html;
+        var d = new Date(); d.setDate(d.getDate() + 1);
+        document.getElementById('rsDate').value = d.toISOString().slice(0, 10);
+        document.getElementById('rsScheduleId').innerHTML = '<option value="">请先查询班次</option>';
+        document.getElementById('rsSeatMap').innerHTML = '';
+        document.getElementById('rsSummary').innerHTML = '原班次：' + order.routeName + ' ' + (order.departTime || '');
+        document.getElementById('rescheduleModal').classList.add('show');
+        searchRescheduleSchedules();
+    });
+}
+function searchRescheduleSchedules() {
+    var params = new URLSearchParams({
+        departPort: rsOrder.departPort || '',
+        arrivePort: rsOrder.arrivePort || '',
+        date: document.getElementById('rsDate').value
+    });
+    fetch('/api/schedules/search?' + params).then(r => r.json()).then(res => {
+        var list = res.data || [];
+        var html = '<option value="">请选择班次</option>';
+        list.forEach(s => {
+            html += '<option value="' + s.id + '" data-price="' + s.price + '">' + s.departTime + ' ' +
+                s.shipName + ' ¥' + s.price + ' 余' + s.remainingSeats + '</option>';
+        });
+        document.getElementById('rsScheduleId').innerHTML = html;
+        document.getElementById('rsSeatMap').innerHTML = '';
+    });
+}
+function loadRescheduleSeats() {
+    var scheduleId = document.getElementById('rsScheduleId').value;
+    rsSeat = null;
+    if (!scheduleId) { document.getElementById('rsSeatMap').innerHTML = ''; return; }
+    var opt = document.getElementById('rsScheduleId').selectedOptions[0];
+    document.getElementById('rsSummary').innerHTML = '新班次票价：¥' + opt.dataset.price + '（改签后按差价多退少补）';
+    api('/api/schedules/' + scheduleId + '/seat-map').then(res => {
+        var seats = (res.data || []).slice().sort((a, b) => {
+            var ra = parseInt(a.seatNo), rb = parseInt(b.seatNo);
+            if (ra !== rb) return ra - rb;
+            return a.seatNo.localeCompare(b.seatNo);
+        });
+        var html = '';
+        seats.forEach(s => {
+            var cls = s.status === 'SOLD' ? 'sold' : (s.status === 'LOCKED' ? 'locked' : 'available');
+            var click = s.status === 'AVAILABLE' ? ' onclick="pickRescheduleSeat(\'' + s.seatNo + '\')"' : '';
+            html += '<div class="seat ' + cls + '" data-seat="' + s.seatNo + '"' + click + '>' + s.seatNo + '</div>';
+        });
+        document.getElementById('rsSeatMap').innerHTML = html;
+    });
+}
+function pickRescheduleSeat(seatNo) {
+    rsSeat = seatNo;
+    document.querySelectorAll('#rsSeatMap .seat').forEach(el => {
+        if (el.dataset.seat === seatNo) el.classList.add('selected');
+        else el.classList.remove('selected');
+    });
+}
+function submitReschedule() {
+    var scheduleId = document.getElementById('rsScheduleId').value;
+    if (!rsTicketId || !scheduleId || !rsSeat) { alert('请选择船票、新班次和新座位'); return; }
+    if (!confirm('确认改签？座位 ' + rsSeat + '，差价多退少补。')) return;
+    api('/api/tickets/' + rsTicketId + '/reschedule', 'POST',
+        {newScheduleId: scheduleId, newSeatNo: rsSeat}).then(res => {
+        if (res.code === 0) {
+            alert('改签成功');
+            closeModal('rescheduleModal');
+            loadOrders(page);
+        } else alert(res.msg);
+    });
+}
+function showDetail(id) {
+    api('/api/orders/' + id).then(res => {
+        var o = res.data.order;
+        var html = '<p><b>订单号：</b>' + o.orderNo + '</p>' +
+            '<p><b>航线：</b>' + o.routeName + '</p>' +
+            '<p><b>发船时间：</b>' + (o.departTime || '') + '</p>' +
+            '<p><b>状态：</b>' + statusText(o.status) + '</p>' +
+            '<p><b>金额：</b>¥' + o.totalAmount + '</p>' +
+            '<table><thead><tr><th>座位</th><th>乘客</th><th>身份证</th><th>状态</th></tr></thead><tbody>';
+        res.data.tickets.forEach(t => {
+            html += '<tr><td>' + t.seatNo + '</td><td>' + t.passengerName + '</td><td>' + t.idCard + '</td><td>' + ticketStatusText(t.status, o.departTime) + '</td></tr>';
+        });
+        html += '</tbody></table>';
+        document.getElementById('detailContent').innerHTML = html;
+        document.getElementById('detailModal').classList.add('show');
+    });
+}
+function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+loadOrders(1);
+</script>
+</body>
+</html>

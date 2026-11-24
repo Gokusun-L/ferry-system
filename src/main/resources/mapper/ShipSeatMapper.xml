@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ferry.dao.ShipSeatDao">
+
+    <insert id="insertBatch">
+        INSERT INTO ship_seat (ship_id, seat_no, row_no, col_no) VALUES
+        <foreach collection="list" item="s" separator=",">
+            (#{s.shipId}, #{s.seatNo}, #{s.rowNo}, #{s.colNo})
+        </foreach>
+    </insert>
+
+    <select id="listByShip" resultType="ShipSeat">
+        SELECT id, ship_id, seat_no, row_no, col_no FROM ship_seat
+        WHERE ship_id = #{shipId} ORDER BY row_no, col_no
+    </select>
+
+    <delete id="deleteByShip">
+        DELETE FROM ship_seat WHERE ship_id = #{shipId}
+    </delete>
+
+</mapper>

@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: content(~{::body})}">
+<body>
+<div id="pageContent">
+    <div class="card">
+        <div class="print-only" id="printHeader">
+            <h2 style="margin-bottom:6px;">轮渡码头客运统计报表</h2>
+            <p id="printRange" style="color:#475569;"></p>
+        </div>
+        <h3>统计报表</h3>
+        <div class="toolbar">
+            <div class="form-group"><label>开始日期</label><input type="date" id="startDate"></div>
+            <div class="form-group"><label>结束日期</label><input type="date" id="endDate"></div>
+            <div class="form-group">
+                <label>周期</label>
+                <select id="periodType" onchange="loadPeriod()">
+                    <option value="day">按日</option>
+                    <option value="week">按周</option>
+                    <option value="month">按月</option>
+                </select>
+            </div>
+            <button class="btn btn-primary" onclick="loadAll()">查询</button>
+            <button class="btn btn-primary" onclick="printStats()">打印预览</button>
+            <button class="btn btn-success" onclick="exportExcel('sales')">导出售票统计</button>
+            <button class="btn btn-success" onclick="exportExcel('route')">导出航线统计</button>
+            <button class="btn btn-success" onclick="exportExcel('seller')">导出业绩</button>
+            <button class="btn btn-success" onclick="exportExcel('occupancy')">导出上座率</button>
+        </div>
+
+        <div class="stat-grid" id="incomeGrid"></div>
+
+        <div class="card"><h3>周期收入统计</h3><div id="periodTable"></div></div>
+        <div class="card"><h3>售票员业绩排名</h3><div id="sellerTable"></div></div>
+        <div class="card"><h3>航线售票统计</h3><div id="routeTable"></div></div>
+        <div class="card"><h3>班次售票统计（按发船日期）</h3><div id="scheduleTable"></div></div>
+        <div class="card"><h3>班次上座率</h3><div id="occupancyTable"></div></div>
+        <div class="card"><h3>航线平均上座率</h3><div id="routeOccTable"></div></div>
+        <div class="card"><h3>时间段上座率对比（早班/午班/晚班）</h3><div id="periodOccTable"></div></div>
+        <div class="card"><h3>低上座率预警（&lt;50%）</h3><div id="lowOccTable"></div></div>
+        <div class="card"><h3>退票原因分布</h3><div id="refundTable"></div></div>
+    </div>
+</div>
+
+<script class="page-script">
+function defaultDate() {
+    var today = new Date();
+    var start = new Date(today.getTime() - 30 * 86400000);
+    document.getElementById('startDate').value = start.toISOString().slice(0, 10);
+    document.getElementById('endDate').value = today.toISOString().slice(0, 10);
+}
+function money(v) {
+    var n = Number(v || 0);
+    return n.toFixed(2);
+}
+function loadAll() {
+    var start = document.getElementById('startDate').value;
+    var end = document.getElementById('endDate').value;
+    if (!start || !end) { alert('请选择日期范围'); return; }
+    if (start > end) { alert('开始日期不能晚于结束日期'); return; }
+
+    api('/api/stats/income?start=' + start + '&end=' + end).then(res => {
+        var d = res.data || {};
+        document.getElementById('incomeGrid').innerHTML =
+            '<div class="stat-card"><div class="label">售票量（张）</div><div class="value">' + (d.sale_count || 0) + '</div></div>' +
+            '<div class="stat-card"><div class="label">总收入</div><div class="value">¥' + money(d.total_income) + '</div></div>' +
+            '<div class="stat-card"><div class="label">退票量（张）</div><div class="value" style="color:#f59e0b">' + (d.refund_count || 0) + '</div></div>' +
+            '<div class="stat-card"><div class="label">退票金额</div><div class="value" style="color:#ef4444">¥' + money(d.refund_loss) + '</div></div>' +
+            '<div class="stat-card"><div class="label">退票手续费</div><div class="value" style="color:#64748b">¥' + money(d.refund_fee) + '</div></div>' +
+            '<div class="stat-card"><div class="label">净收入</div><div class="value" style="color:#10b981">¥' + money(d.net_income) + '</div></div>' +
+            '<div class="stat-card"><div class="label">退票率</div><div class="value" style="color:#f59e0b">' + (d.refund_rate || 0) + '%</div></div>';
+        document.getElementById('printRange').textContent =
+            '统计区间：' + start + ' 至 ' + end + '　　生成时间：' + new Date().toLocaleString();
+    });
+
+    loadPeriod();
+
+    api('/api/stats/by-seller?start=' + start + '&end=' + end).then(res => {
+        var html = '<table><thead><tr><th>排名</th><th>售票员</th><th>售票量（张）</th><th>售票金额</th></tr></thead><tbody>';
+        if (!res.data || res.data.length === 0) html += '<tr><td colspan="4">暂无数据</td></tr>';
+        (res.data || []).forEach((s, i) => {
+            html += '<tr><td>' + (i + 1) + '</td><td>' + s.seller_name + '</td><td>' + s.sale_count + '</td><td>¥' + money(s.sale_amount) + '</td></tr>';
+        });
+        html += '</tbody></table>';
+        document.getElementById('sellerTable').innerHTML = html;
+    });
+
+    api('/api/stats/by-route?start=' + start + '&end=' + end).then(res => {
+        var rows = res.data || [];
+        var total = rows.reduce((sum, s) => sum + Number(s.sale_amount || 0), 0);
+        var html = '<table><thead><tr><th>航线</th><th>售票量（张）</th><th>售票金额</th><th>收入占比</th></tr></thead><tbody>';
+        if (rows.length === 0) html += '<tr><td colspan="4">暂无数据</td></tr>';
+        rows.forEach(s => {
+            var share = total > 0 ? (Number(s.sale_amount || 0) / total * 100) : 0;
+            html += '<tr><td>' + s.route_name + '</td><td>' + s.sale_count + '</td><td>¥' + money(s.sale_amount) + '</td>' +
+                '<td>' + share.toFixed(2) + '%</td></tr>';
+        });
+        html += '</tbody></table>';
+        document.getElementById('routeTable').innerHTML = html;
+    });
+
+    api('/api/stats/by-schedule?start=' + start + '&end=' + end).then(res => {
+        var html = '<table><thead><tr><th>发船时间</th><th>航线</th><th>售票量（张）</th><th>退票数</th><th>收入</th></tr></thead><tbody>';
+        if (!res.data || res.data.length === 0) html += '<tr><td colspan="5">暂无数据</td></tr>';
+        (res.data || []).forEach(s => {
+            html += '<tr><td>' + s.depart_time + '</td><td>' + s.route_name + '</td>' +
+                '<td>' + s.sale_count + '</td><td>' + (s.refund_count || 0) + '</td><td>¥' + money(s.income) + '</td></tr>';
+        });
+        html += '</tbody></table>';
+        document.getElementById('scheduleTable').innerHTML = html;
+    });
+
+    api('/api/stats/schedule-occupancy').then(res => {
+        var html = '<table><thead><tr><th>航线</th><th>发船时间</th><th>船舶</th><th>总座位</th><th>已售</th><th>上座率</th></tr></thead><tbody>';
+        if (!res.data || res.data.length === 0) html += '<tr><td colspan="6">暂无数据</td></tr>';
+        (res.data || []).forEach(s => {
+            var occ = Number(s.occupancy || 0);
+            var cls = occ < 50 ? 'low-occupancy' : '';
+            html += '<tr><td>' + s.route_name + '</td><td>' + s.depart_time + '</td><td>' + s.ship_name + '</td>' +
+                '<td>' + s.total_seats + '</td><td>' + s.sold_count + '</td><td class="' + cls + '">' + occ.toFixed(2) + '%</td></tr>';
+        });
+        html += '</tbody></table>';
+        document.getElementById('occupancyTable').innerHTML = html;
+    });
+
+    api('/api/stats/route-occupancy').then(res => {
+        var html = '<table><thead><tr><th>排名</th><th>航线</th><th>平均上座率</th></tr></thead><tbody>';
+        if (!res.data || res.data.length === 0) html += '<tr><td colspan="3">暂无数据</td></tr>';
+        (res.data || []).forEach((s, i) => {
+            var occ = Number(s.avg_occupancy || 0);
+            var cls = occ < 50 ? 'low-occupancy' : '';
+            html += '<tr><td>' + (i + 1) + '</td><td>' + s.route_name + '</td><td class="' + cls + '">' + occ.toFixed(2) + '%</td></tr>';
+        });
+        html += '</tbody></table>';
+        document.getElementById('routeOccTable').innerHTML = html;
+    });
+
+    api('/api/stats/period-occupancy').then(res => {
+        var html = '<table><thead><tr><th>时间段</th><th>班次数</th><th>平均上座率</th></tr></thead><tbody>';
+        if (!res.data || res.data.length === 0) html += '<tr><td colspan="3">暂无数据</td></tr>';
+        (res.data || []).forEach(s => {
+            var occ = Number(s.avg_occupancy || 0);
+            var cls = occ < 50 ? 'low-occupancy' : '';
+            html += '<tr><td>' + s.period + '</td><td>' + s.schedule_count + '</td><td class="' + cls + '">' + occ.toFixed(2) + '%</td></tr>';
+        });
+        html += '</tbody></table>';
+        document.getElementById('periodOccTable').innerHTML = html;
+    });
+
+    api('/api/stats/low-occupancy').then(res => {
+        var html = '<table><thead><tr><th>航线</th><th>发船时间</th><th>总座位</th><th>已售</th><th>上座率</th></tr></thead><tbody>';
+        if (!res.data || res.data.length === 0) html += '<tr><td colspan="5">无低上座率班次</td></tr>';
+        (res.data || []).forEach(s => {
+            html += '<tr><td>' + s.route_name + '</td><td>' + s.depart_time + '</td><td>' + s.total_seats + '</td>' +
+                '<td>' + s.sold_count + '</td><td class="low-occupancy">' + Number(s.occupancy || 0).toFixed(2) + '%</td></tr>';
+        });
+        html += '</tbody></table>';
+        document.getElementById('lowOccTable').innerHTML = html;
+    });
+
+    api('/api/stats/refund?start=' + start + '&end=' + end).then(res => {
+        var html = '<table><thead><tr><th>退票原因</th><th>退票数</th><th>退票金额</th><th>手续费</th></tr></thead><tbody>';
+        if (!res.data || res.data.length === 0) html += '<tr><td colspan="4">无退票记录</td></tr>';
+        (res.data || []).forEach(s => {
+            html += '<tr><td>' + (s.reason || '未填写') + '</td><td>' + s.refund_count + '</td>' +
+                '<td>¥' + money(s.refund_amount) + '</td><td>¥' + money(s.fee_amount) + '</td></tr>';
+        });
+        html += '</tbody></table>';
+        document.getElementById('refundTable').innerHTML = html;
+    });
+}
+function loadPeriod() {
+    var start = document.getElementById('startDate').value;
+    var end = document.getElementById('endDate').value;
+    var type = document.getElementById('periodType').value;
+    if (!start || !end) return;
+    api('/api/stats/period?start=' + start + '&end=' + end + '&groupBy=' + type).then(res => {
+        var label = type === 'month' ? '月份' : (type === 'week' ? '周' : '日期');
+        var html = '<table><thead><tr><th>' + label + '</th><th>售票量（张）</th><th>售票金额</th><th>退票量</th><th>退票金额</th><th>净收入</th></tr></thead><tbody>';
+        if (!res.data || res.data.length === 0) html += '<tr><td colspan="6">暂无数据</td></tr>';
+        (res.data || []).forEach(s => {
+            var net = Number(s.sale_amount || 0) - Number(s.refund_amount || 0);
+            html += '<tr><td>' + s.period + '</td><td>' + s.sale_count + '</td><td>¥' + money(s.sale_amount) + '</td>' +
+                '<td>' + s.refund_count + '</td><td>¥' + money(s.refund_amount) + '</td><td>¥' + money(net) + '</td></tr>';
+        });
+        html += '</tbody></table>';
+        document.getElementById('periodTable').innerHTML = html;
+    });
+}
+function printStats() {
+    var start = document.getElementById('startDate').value;
+    var end = document.getElementById('endDate').value;
+    document.getElementById('printRange').textContent =
+        '统计区间：' + start + ' 至 ' + end + '　　生成时间：' + new Date().toLocaleString();
+    window.print();
+}
+function exportExcel(type) {
+    var start = document.getElementById('startDate').value;
+    var end = document.getElementById('endDate').value;
+    var url = '/api/export/' + type + '?start=' + start + '&end=' + end;
+    if (type === 'occupancy') url = '/api/export/occupancy';
+    window.location.href = url;
+}
+defaultDate();
+loadAll();
+</script>
+</body>
+</html>

@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: content(~{::body})}">
+<body>
+<div id="pageContent">
+    <div class="card">
+        <h3>我的业绩</h3>
+        <div class="toolbar">
+            <div class="form-group"><input type="date" id="startDate"></div>
+            <div class="form-group"><input type="date" id="endDate"></div>
+            <button class="btn btn-primary" onclick="loadStats()">查询</button>
+        </div>
+        <div id="statGrid" class="stat-grid"></div>
+    </div>
+</div>
+
+<script class="page-script">
+function defaultDate() {
+    var today = new Date();
+    var start = new Date(today.getTime() - 30 * 86400000);
+    document.getElementById('startDate').value = start.toISOString().slice(0, 10);
+    document.getElementById('endDate').value = today.toISOString().slice(0, 10);
+}
+function loadStats() {
+    var start = document.getElementById('startDate').value;
+    var end = document.getElementById('endDate').value;
+    api('/api/stats/my-performance?start=' + start + '&end=' + end).then(res => {
+        var d = res.data || {};
+        document.getElementById('statGrid').innerHTML =
+            '<div class="stat-card"><div class="label">售票量</div><div class="value">' + (d.sale_count || 0) + '</div></div>' +
+            '<div class="stat-card"><div class="label">售票金额</div><div class="value">¥' + (d.sale_amount || 0) + '</div></div>';
+    });
+}
+defaultDate();
+loadStats();
+</script>
+</body>
+</html>

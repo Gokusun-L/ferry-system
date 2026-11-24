@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: content(~{::body})}">
+<body>
+<div id="pageContent">
+    <div class="card">
+        <h3>订单管理</h3>
+        <div class="toolbar">
+            <div class="form-group"><input type="date" id="sDate"></div>
+            <div class="form-group"><input type="number" id="sScheduleId" placeholder="班次ID"></div>
+            <div class="form-group"><input type="text" id="sPassengerName" placeholder="乘客姓名"></div>
+            <button class="btn btn-primary" onclick="loadOrders(1)">搜索</button>
+        </div>
+        <table>
+            <thead>
+            <tr><th>订单号</th><th>航线</th><th>发船时间</th><th>总金额</th><th>状态</th><th>渠道</th><th>下单时间</th><th>操作</th></tr>
+            </thead>
+            <tbody id="orderTbody"></tbody>
+        </table>
+        <div class="pagination" id="orderPagination"></div>
+    </div>
+</div>
+
+<div class="modal-mask" id="detailModal">
+    <div class="modal">
+        <h3>订单详情</h3>
+        <div id="detailContent"></div>
+        <button class="btn" onclick="closeModal('detailModal')">关闭</button>
+    </div>
+</div>
+
+<script class="page-script">
+var page = 1;
+function loadOrders(p) {
+    page = p || 1;
+    var params = new URLSearchParams({
+        page: page, size: 10,
+        date: document.getElementById('sDate').value,
+        scheduleId: document.getElementById('sScheduleId').value,
+        passengerName: document.getElementById('sPassengerName').value
+    });
+    fetch('/api/orders?' + params).then(r => r.json()).then(res => {
+        var html = '';
+        res.data.list.forEach(o => {
+            html += '<tr><td>' + o.orderNo + '</td><td>' + o.routeName + '</td><td>' + (o.departTime || '') + '</td>' +
+                '<td>¥' + o.totalAmount + '</td><td>' + statusText(o.status) + '</td>' +
+                '<td>' + (o.channel === 'ONLINE' ? '线上' : '线下') + '</td><td>' + o.createTime + '</td>' +
+                '<td><button class="btn btn-sm btn-primary" onclick="showDetail(' + o.id + ')">详情</button></td></tr>';
+        });
+        document.getElementById('orderTbody').innerHTML = html;
+        renderPagination('orderPagination', page, res.data.total, 10, loadOrders);
+    });
+}
+function showDetail(id) {
+    api('/api/orders/' + id).then(res => {
+        var o = res.data.order;
+        var html = '<p><b>订单号：</b>' + o.orderNo + '</p>' +
+            '<p><b>航线：</b>' + o.routeName + '（' + o.departPort + ' → ' + o.arrivePort + '）</p>' +
+            '<p><b>发船时间：</b>' + (o.departTime || '') + '</p>' +
+            '<p><b>状态：</b>' + statusText(o.status) + '</p>' +
+            '<p><b>总金额：</b>¥' + o.totalAmount + '</p>' +
+            '<table><thead><tr><th>船票号</th><th>座位</th><th>乘客</th><th>身份证</th><th>状态</th></tr></thead><tbody>';
+        res.data.tickets.forEach(t => {
+            html += '<tr><td>' + t.ticketNo + '</td><td>' + t.seatNo + '</td><td>' + t.passengerName + '</td>' +
+                '<td>' + t.idCard + '</td><td>' + statusText(t.status) + '</td></tr>';
+        });
+        html += '</tbody></table>';
+        document.getElementById('detailContent').innerHTML = html;
+        document.getElementById('detailModal').classList.add('show');
+    });
+}
+function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+loadOrders(1);
+</script>
+</body>
+</html>

@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ferry.dao.UserDao">
+
+    <sql id="cols">
+        id, username, password, name, phone, id_card, role, status, login_fail, lock_until, created_at, updated_at
+    </sql>
+
+    <select id="findByUsername" resultType="User">
+        SELECT <include refid="cols"/> FROM user WHERE username = #{username}
+    </select>
+
+    <select id="findByPhone" resultType="User">
+        SELECT <include refid="cols"/> FROM user WHERE phone = #{phone}
+    </select>
+
+    <select id="findById" resultType="User">
+        SELECT <include refid="cols"/> FROM user WHERE id = #{id}
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO user (username, password, name, phone, id_card, role, status)
+        VALUES (#{username}, #{password}, #{name}, #{phone}, #{idCard}, #{role}, #{status})
+    </insert>
+
+    <update id="update">
+        UPDATE user
+        <set>
+            <if test="name != null">name = #{name},</if>
+            <if test="phone != null">phone = #{phone},</if>
+            <if test="idCard != null">id_card = #{idCard},</if>
+            <if test="role != null">role = #{role},</if>
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <update id="updatePassword">
+        UPDATE user SET password = #{password} WHERE id = #{id}
+    </update>
+
+    <update id="updateStatus">
+        UPDATE user SET status = #{status} WHERE id = #{id}
+    </update>
+
+    <update id="incrementLoginFail">
+        UPDATE user SET login_fail = login_fail + 1 WHERE id = #{id}
+    </update>
+
+    <update id="resetLoginFail">
+        UPDATE user SET login_fail = 0, lock_until = NULL WHERE id = #{id}
+    </update>
+
+    <update id="setLock">
+        UPDATE user SET lock_until = #{lockUntil} WHERE id = #{id}
+    </update>
+
+    <select id="search" resultType="User">
+        SELECT <include refid="cols"/> FROM user
+        <where>
+            <if test="username != null and username != ''">
+                AND username LIKE CONCAT('%', #{username}, '%')
+            </if>
+            <if test="role != null and role != ''">
+                AND role = #{role}
+            </if>
+            <if test="name != null and name != ''">
+                AND name LIKE CONCAT('%', #{name}, '%')
+            </if>
+        </where>
+        ORDER BY id DESC
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <select id="count" resultType="long">
+        SELECT COUNT(*) FROM user
+        <where>
+            <if test="username != null and username != ''">
+                AND username LIKE CONCAT('%', #{username}, '%')
+            </if>
+            <if test="role != null and role != ''">
+                AND role = #{role}
+            </if>
+            <if test="name != null and name != ''">
+                AND name LIKE CONCAT('%', #{name}, '%')
+            </if>
+        </where>
+    </select>
+
+</mapper>

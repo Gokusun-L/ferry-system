@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ferry.dao.RescheduleDao">
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO reschedule (old_ticket_id, new_ticket_id, old_schedule_id, new_schedule_id, price_diff)
+        VALUES (#{oldTicketId}, #{newTicketId}, #{oldScheduleId}, #{newScheduleId}, #{priceDiff})
+    </insert>
+
+    <select id="listByOldTicket" resultType="Reschedule">
+        SELECT id, old_ticket_id, new_ticket_id, old_schedule_id, new_schedule_id, price_diff, reschedule_time
+        FROM reschedule WHERE old_ticket_id = #{oldTicketId}
+    </select>
+
+</mapper>

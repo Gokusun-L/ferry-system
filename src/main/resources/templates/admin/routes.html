@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: content(~{::body})}">
+<body>
+<div id="pageContent">
+    <div class="card">
+        <h3>航线管理</h3>
+        <div class="toolbar">
+            <div class="form-group"><input type="text" id="sRouteName" placeholder="航线名称"></div>
+            <div class="form-group"><input type="text" id="sDepartPort" placeholder="出发港口"></div>
+            <div class="form-group"><input type="text" id="sArrivePort" placeholder="到达港口"></div>
+            <button class="btn btn-primary" onclick="loadRoutes(1)">搜索</button>
+            <button class="btn btn-success" onclick="openEdit()">新增航线</button>
+        </div>
+        <table>
+            <thead><tr><th>ID</th><th>航线名称</th><th>出发港口</th><th>到达港口</th><th>航行时长(分)</th><th>描述</th><th>操作</th></tr></thead>
+            <tbody id="routeTbody"></tbody>
+        </table>
+        <div class="pagination" id="routePagination"></div>
+    </div>
+</div>
+
+<div class="modal-mask" id="editModal">
+    <div class="modal">
+        <h3 id="editTitle">新增航线</h3>
+        <input type="hidden" id="eId">
+        <div class="form-group"><label>航线名称</label><input type="text" id="eRouteName"></div>
+        <div class="form-row">
+            <div class="form-group"><label>出发港口</label><input type="text" id="eDepartPort"></div>
+            <div class="form-group"><label>到达港口</label><input type="text" id="eArrivePort"></div>
+        </div>
+        <div class="form-group"><label>航行时长(分钟)</label><input type="number" id="eDuration"></div>
+        <div class="form-group"><label>描述</label><textarea id="eDescription"></textarea></div>
+        <button class="btn btn-primary" onclick="saveRoute()">保存</button>
+        <button class="btn" onclick="closeModal('editModal')">取消</button>
+    </div>
+</div>
+
+<div class="modal-mask" id="detailModal">
+    <div class="modal">
+        <h3>航线详情</h3>
+        <div id="routeDetail"></div>
+        <button class="btn" onclick="closeModal('detailModal')">关闭</button>
+    </div>
+</div>
+
+<script class="page-script">
+var page = 1;
+function loadRoutes(p) {
+    page = p || 1;
+    var params = new URLSearchParams({
+        page: page, size: 10,
+        routeName: document.getElementById('sRouteName').value,
+        departPort: document.getElementById('sDepartPort').value,
+        arrivePort: document.getElementById('sArrivePort').value
+    });
+    fetch('/api/routes?' + params).then(r => r.json()).then(res => {
+        var html = '';
+        res.data.list.forEach(r => {
+            html += '<tr><td>' + r.id + '</td><td>' + r.routeName + '</td><td>' + r.departPort + '</td><td>' + r.arrivePort + '</td>' +
+                '<td>' + r.duration + '</td><td>' + (r.description || '') + '</td>' +
+                '<td><button class="btn btn-sm btn-primary" onclick="showDetail(' + r.id + ')">详情</button> ' +
+                '<button class="btn btn-sm btn-primary" onclick="openEdit(' + r.id + ')">编辑</button> ' +
+                '<button class="btn btn-sm btn-danger" onclick="delRoute(' + r.id + ')">删除</button></td></tr>';
+        });
+        document.getElementById('routeTbody').innerHTML = html;
+        renderPagination('routePagination', page, res.data.total, 10, loadRoutes);
+    });
+}
+function openEdit(id) {
+    document.getElementById('editTitle').textContent = id ? '编辑航线' : '新增航线';
+    document.getElementById('eId').value = id || '';
+    if (id) {
+        fetch('/api/routes/all').then(r => r.json()).then(res => {
+            var route = res.data.find(x => x.id === id);
+            document.getElementById('eRouteName').value = route.routeName;
+            document.getElementById('eDepartPort').value = route.departPort;
+            document.getElementById('eArrivePort').value = route.arrivePort;
+            document.getElementById('eDuration').value = route.duration;
+            document.getElementById('eDescription').value = route.description || '';
+        });
+    } else {
+        document.getElementById('eRouteName').value = '';
+        document.getElementById('eDepartPort').value = '';
+        document.getElementById('eArrivePort').value = '';
+        document.getElementById('eDuration').value = '';
+        document.getElementById('eDescription').value = '';
+    }
+    document.getElementById('editModal').classList.add('show');
+}
+function saveRoute() {
+    var id = document.getElementById('eId').value;
+    var body = {
+        routeName: document.getElementById('eRouteName').value,
+        departPort: document.getElementById('eDepartPort').value,
+        arrivePort: document.getElementById('eArrivePort').value,
+        duration: parseInt(document.getElementById('eDuration').value),
+        description: document.getElementById('eDescription').value
+    };
+    var url = id ? '/api/routes/' + id : '/api/routes';
+    var method = id ? 'PUT' : 'POST';
+    api(url, method, body).then(res => {
+        if (res.code === 0) { closeModal('editModal'); loadRoutes(page); }
+        else alert(res.msg);
+    });
+}
+function delRoute(id) {
+    if (!confirm('确定删除该航线？')) return;
+    api('/api/routes/' + id, 'DELETE').then(res => {
+        if (res.code === 0) loadRoutes(page); else alert(res.msg);
+    });
+}
+function showDetail(id) {
+    fetch('/api/routes/all').then(r => r.json()).then(res => {
+        var route = res.data.find(x => x.id === id);
+        if (!route) { alert('航线不存在'); return; }
+        document.getElementById('routeDetail').innerHTML =
+            '<p><b>航线名称：</b>' + route.routeName + '</p>' +
+            '<p><b>出发港口：</b>' + route.departPort + '</p>' +
+            '<p><b>到达港口：</b>' + route.arrivePort + '</p>' +
+            '<p><b>航行时长：</b>' + route.duration + ' 分钟</p>' +
+            '<p><b>描述：</b>' + (route.description || '无') + '</p>' +
+            '<h4>该航线下班次</h4><div id="routeScheduleDetail">加载中...</div>';
+        document.getElementById('detailModal').classList.add('show');
+        fetch('/api/schedules?page=1&size=100&routeId=' + id).then(r => r.json()).then(result => {
+            var list = (result.data && result.data.list) || [];
+            var statusMap = {PENDING: '待发布', SELLING: '售票中', DEPARTED: '已发船', FINISHED: '已完成', CANCELLED: '已取消'};
+            var html = '<table><thead><tr><th>发船时间</th><th>到达时间</th><th>船舶</th><th>票价</th><th>状态</th><th>余票</th></tr></thead><tbody>';
+            if (list.length === 0) html += '<tr><td colspan="6">暂无班次</td></tr>';
+            list.forEach(s => {
+                var total = s.totalSeats || 0;
+                var remain = total - (s.soldCount || 0);
+                html += '<tr><td>' + s.departTime + '</td><td>' + s.arriveTime + '</td><td>' + (s.shipName || '') + '</td>' +
+                    '<td>¥' + Number(s.price).toFixed(2) + '</td><td>' + (statusMap[s.status] || s.status) + '</td><td>' + remain + '</td></tr>';
+            });
+            html += '</tbody></table>';
+            document.getElementById('routeScheduleDetail').innerHTML = html;
+        });
+    });
+}
+function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+loadRoutes(1);
+</script>
+</body>
+</html>

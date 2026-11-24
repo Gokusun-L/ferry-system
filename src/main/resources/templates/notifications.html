@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: content(~{::body})}">
+<body>
+<div id="pageContent">
+    <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+            <h3 style="margin:0;">消息通知</h3>
+            <button class="btn btn-sm btn-primary" onclick="readAll()">全部标记为已读</button>
+        </div>
+        <div id="noticeList" style="min-height:80px;"></div>
+        <div class="pagination" id="noticePagination"></div>
+    </div>
+</div>
+<script class="page-script">
+var noticePage = 1;
+var TYPE_TEXT = {SCHEDULE_CANCEL: '班次取消', REFUND_SUCCESS: '退票成功', RESCHEDULE: '改签通知'};
+function escapeHtml(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+        return {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c];
+    });
+}
+function loadNotices(p) {
+    noticePage = p || 1;
+    api('/api/notifications?page=' + noticePage + '&size=10').then(function (res) {
+        if (res.code !== 0) { alert(res.msg); return; }
+        var list = res.data.list || [];
+        if (list.length === 0) {
+            document.getElementById('noticeList').innerHTML = '<p style="color:#94a3b8;">暂无通知</p>';
+        } else {
+            var html = '';
+            list.forEach(function (n) {
+                html += '<div class="notice-item">' +
+                    '<div class="notice-head">' +
+                    (n.isRead === 0 ? '<span class="notice-dot"></span>' : '') +
+                    '<span class="notice-type">' + escapeHtml(TYPE_TEXT[n.type] || n.type) + '</span>' +
+                    '<span class="notice-title">' + escapeHtml(n.title) + '</span>' +
+                    '<span class="notice-time">' + escapeHtml((n.createTime || '').replace('T', ' ')) + '</span>' +
+                    '</div>' +
+                    '<div class="notice-content">' + escapeHtml(n.content) + '</div></div>';
+            });
+            document.getElementById('noticeList').innerHTML = html;
+        }
+        renderPagination('noticePagination', noticePage, res.data.total, 10, loadNotices);
+    });
+}
+function readAll() {
+    api('/api/notifications/read-all', 'POST').then(function (res) {
+        if (res.code === 0) {
+            loadNotices(noticePage);
+            refreshUnreadBadge();
+        } else alert(res.msg);
+    });
+}
+function refreshUnreadBadge() {
+    api('/api/notifications/unread-count').then(function (res) {
+        var el = document.getElementById('unreadBadge');
+        if (res.code !== 0 || !el) return;
+        var n = res.data || 0;
+        if (n > 0) { el.textContent = n > 99 ? '99+' : n; el.style.display = 'inline-block'; }
+        else el.style.display = 'none';
+    });
+}
+loadNotices(1);
+</script>
+</body>
+</html>

@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ferry.dao.TicketDao">
+
+    <sql id="joinSelect">
+        SELECT t.id, t.ticket_no, t.order_id, t.schedule_id, t.seat_no, t.passenger_name, t.id_card, t.phone,
+               t.price, t.status, t.check_time, t.checker_id,
+               r.route_name, r.depart_port, r.arrive_port, sh.ship_name, s.depart_time,
+               u.name AS checker_name
+        FROM ticket t
+        JOIN schedule s ON t.schedule_id = s.id
+        JOIN route r ON s.route_id = r.id
+        JOIN ship sh ON s.ship_id = sh.id
+        LEFT JOIN user u ON t.checker_id = u.id
+    </sql>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO ticket (ticket_no, order_id, schedule_id, seat_no, passenger_name, id_card, phone, price, status)
+        VALUES (#{ticketNo}, #{orderId}, #{scheduleId}, #{seatNo}, #{passengerName}, #{idCard}, #{phone}, #{price}, #{status})
+    </insert>
+
+    <insert id="insertBatch" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO ticket (ticket_no, order_id, schedule_id, seat_no, passenger_name, id_card, phone, price, status) VALUES
+        <foreach collection="list" item="t" separator=",">
+            (#{t.ticketNo}, #{t.orderId}, #{t.scheduleId}, #{t.seatNo}, #{t.passengerName}, #{t.idCard}, #{t.phone}, #{t.price}, #{t.status})
+        </foreach>
+    </insert>
+
+    <select id="findById" resultType="Ticket">
+        <include refid="joinSelect"/> WHERE t.id = #{id}
+    </select>
+
+    <select id="findByTicketNo" resultType="Ticket">
+        <include refid="joinSelect"/> WHERE t.ticket_no = #{ticketNo}
+    </select>
+
+    <select id="listByOrder" resultType="Ticket">
+        <include refid="joinSelect"/> WHERE t.order_id = #{orderId} ORDER BY t.seat_no
+    </select>
+
+    <select id="listBySchedule" resultType="Ticket">
+        <include refid="joinSelect"/> WHERE t.schedule_id = #{scheduleId} ORDER BY t.seat_no
+    </select>
+
+    <select id="listByUser" resultType="Ticket">
+        <include refid="joinSelect"/>
+        WHERE t.order_id IN (SELECT id FROM orders WHERE user_id = #{userId})
+        <if test="status != null and status != ''">AND t.status = #{status}</if>
+        ORDER BY t.id DESC
+    </select>
+
+    <update id="updateStatus">
+        UPDATE ticket SET status = #{status} WHERE id = #{id}
+    </update>
+
+    <update id="updateStatusIf">
+        UPDATE ticket SET status = #{to} WHERE id = #{id} AND status = #{from}
+    </update>
+
+    <update id="markChecked">
+        UPDATE ticket SET status = 'CHECKED', check_time = #{checkTime}, checker_id = #{checkerId}
+        WHERE id = #{id} AND status = 'PAID'
+    </update>
+
+    <select id="countByScheduleAndIdCard" resultType="int">
+        SELECT COUNT(*) FROM ticket
+        WHERE schedule_id = #{scheduleId} AND id_card = #{idCard} AND status IN ('UNPAID','PAID','CHECKED')
+    </select>
+
+</mapper>

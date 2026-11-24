@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: content(~{::body})}">
+<body>
+<div id="pageContent">
+    <div class="card">
+        <h3>班次查询</h3>
+        <div class="toolbar">
+            <div class="form-group"><input type="text" id="sDepartPort" placeholder="出发港口"></div>
+            <div class="form-group"><input type="text" id="sArrivePort" placeholder="到达港口"></div>
+            <div class="form-group"><input type="date" id="sDate"></div>
+            <button class="btn btn-primary" onclick="search()">搜索</button>
+        </div>
+        <table>
+            <thead><tr><th>航线</th><th>船舶</th><th>发船时间</th><th>到达时间</th><th>票价</th><th>余票</th><th>操作</th></tr></thead>
+            <tbody id="scheduleTbody"></tbody>
+        </table>
+    </div>
+</div>
+
+<div class="modal-mask" id="seatModal">
+    <div class="modal" style="width:640px;">
+        <h3>选择座位</h3>
+        <input type="hidden" id="mScheduleId">
+        <div class="form-group"><label>座位图（点击选择，最多5张）</label>
+            <div style="font-size:12px;color:#6b7280;margin-bottom:6px;">白=可选 黄=他人锁定 灰=已售</div>
+            <div id="seatMap" class="seat-map" style="grid-template-columns:repeat(4,1fr);max-width:100%;"></div>
+        </div>
+        <div id="passengerForms"></div>
+        <div class="form-group"><label>总价</label><span id="totalPrice" style="font-size:20px;color:#ef4444;">¥0</span></div>
+        <button class="btn btn-primary" onclick="submitOrder()">提交订单</button>
+        <button class="btn" onclick="closeModal('seatModal')">取消</button>
+    </div>
+</div>
+
+<script class="page-script">
+var currentSchedule = null;
+var selectedSeats = [];
+var requested = {};   // 正在请求锁定的座位，防止异步竞态重复入列
+function search() {
+    var params = new URLSearchParams({
+        departPort: document.getElementById('sDepartPort').value,
+        arrivePort: document.getElementById('sArrivePort').value,
+        date: document.getElementById('sDate').value
+    });
+    fetch('/api/schedules/search?' + params).then(r => r.json()).then(res => {
+        var html = '';
+        res.data.forEach(s => {
+            html += '<tr><td>' + s.routeName + '</td><td>' + s.shipName + '</td>' +
+                '<td>' + s.departTime + '</td><td>' + s.arriveTime + '</td>' +
+                '<td>¥' + s.price + '</td><td>' + s.remainingSeats + '</td>' +
+                '<td><button class="btn btn-sm btn-primary" onclick="openSeat(' + s.id + ')">选座购票</button></td></tr>';
+        });
+        document.getElementById('scheduleTbody').innerHTML = html;
+    });
+}
+function openSeat(scheduleId) {
+    selectedSeats = [];
+    requested = {};
+    currentSchedule = null;
+    api('/api/schedules/' + scheduleId).then(res => {
+        currentSchedule = res.data;
+        document.getElementById('mScheduleId').value = scheduleId;
+        loadSeatMap(scheduleId);
+        document.getElementById('passengerForms').innerHTML = '';
+        document.getElementById('totalPrice').textContent = '¥0';
+        document.getElementById('seatModal').classList.add('show');
+    });
+}
+function loadSeatMap(scheduleId) {
+    api('/api/schedules/' + scheduleId + '/seat-map').then(res => {
+        var seats = (res.data || []).slice().sort((a, b) => {
+            var ra = parseInt(a.seatNo), rb = parseInt(b.seatNo);
+            if (ra !== rb) return ra - rb;
+            return a.seatNo.localeCompare(b.seatNo);
+        });
+        var html = '';
+        seats.forEach(s => {
+            // 本人锁定的座位（如关掉弹窗后重新打开）应显示为已选中且可取消，
+            // 不能和"他人锁定"一样渲染成不可点，否则用户要等5分钟锁超时才释放。
+            var mine = s.status === 'LOCKED' && s.lockUserId != null && s.lockUserId === window.CURRENT_USER_ID;
+            if (mine && selectedSeats.indexOf(s.seatNo) < 0) selectedSeats.push(s.seatNo);
+            var cls = s.status === 'SOLD' ? 'sold'
+                    : (s.status === 'LOCKED' ? (mine ? 'available selected' : 'locked') : 'available');
+            var click = (s.status === 'AVAILABLE' || mine) ? ' onclick="toggleSeat(\'' + s.seatNo + '\')"' : '';
+            html += '<div class="seat ' + cls + '" data-seat="' + s.seatNo + '"' + click + '>' + s.seatNo + '</div>';
+        });
+        document.getElementById('seatMap').innerHTML = html;
+        renderPassengerForms();
+        updatePrice();
+    });
+}
+function toggleSeat(seatNo) {
+    var idx = selectedSeats.indexOf(seatNo);
+    if (idx >= 0) {
+        selectedSeats.splice(idx, 1);
+        api('/api/seats/unlock', 'POST', {scheduleId: currentSchedule.id, seatNos: [seatNo]});
+        refreshSelected();
+        return;
+    }
+    if (selectedSeats.length >= 5) { alert('最多选择5个座位'); return; }
+    // 锁定是异步的：先用 requested 占位，避免连点/双击在响应返回前重复入列。
+    // 服务端对"本人已锁定"的座位是幂等成功的，不能靠重复锁定被拒来兜底。
+    if (requested[seatNo]) return;
+    requested[seatNo] = true;
+    // 选座即锁：锁定成功才计入已选
+    api('/api/seats/lock', 'POST', {scheduleId: currentSchedule.id, seatNos: [seatNo]}).then(res => {
+        delete requested[seatNo];
+        if (res.code !== 0) {
+            alert(res.msg);
+            loadSeatMap(currentSchedule.id);
+            return;
+        }
+        if (selectedSeats.indexOf(seatNo) < 0) selectedSeats.push(seatNo);
+        refreshSelected();
+    });
+}
+function refreshSelected() {
+    document.querySelectorAll('.seat').forEach(el => {
+        if (selectedSeats.includes(el.dataset.seat)) el.classList.add('selected');
+        else el.classList.remove('selected');
+    });
+    renderPassengerForms();
+    updatePrice();
+}
+function renderPassengerForms() {
+    var html = '<h4>乘客信息</h4>';
+    selectedSeats.forEach(seat => {
+        html += '<div class="form-row" style="margin-bottom:8px;">' +
+            '<div class="form-group"><label>座位 ' + seat + ' - 姓名</label><input type="text" id="pName_' + seat + '"></div>' +
+            '<div class="form-group"><label>身份证号</label><input type="text" id="pIdCard_' + seat + '"></div>' +
+            '<div class="form-group"><label>手机号</label><input type="text" id="pPhone_' + seat + '"></div></div>';
+    });
+    document.getElementById('passengerForms').innerHTML = html;
+}
+function updatePrice() {
+    var total = selectedSeats.length * parseFloat(currentSchedule.price);
+    document.getElementById('totalPrice').textContent = '¥' + total;
+}
+function submitOrder() {
+    if (selectedSeats.length === 0) { alert('请选择座位'); return; }
+    var tickets = [];
+    for (var seat of selectedSeats) {
+        var name = document.getElementById('pName_' + seat).value;
+        var idCard = document.getElementById('pIdCard_' + seat).value;
+        var phone = document.getElementById('pPhone_' + seat).value;
+        if (!name || !idCard) { alert('请填写座位 ' + seat + ' 的乘客信息'); return; }
+        tickets.push({seatNo: seat, passengerName: name, idCard: idCard, phone: phone});
+    }
+    var body = {scheduleId: currentSchedule.id, tickets: tickets};
+    var total = (selectedSeats.length * parseFloat(currentSchedule.price)).toFixed(2);
+    if (!confirm('确认购买 ' + selectedSeats.length + ' 张船票？\n座位：' + selectedSeats.join('、') + '\n总价：¥' + total)) return;
+    api('/api/orders', 'POST', body).then(res => {
+        if (res.code !== 0) { alert(res.msg); return; }
+        var order = res.data;
+        if (confirm('订单已创建，是否立即支付 ¥' + order.totalAmount + '？')) {
+            api('/api/orders/' + order.id + '/pay', 'POST').then(r2 => {
+                if (r2.code === 0) { alert('支付成功！'); closeModal('seatModal'); search(); }
+                else alert(r2.msg);
+            });
+        } else {
+            alert('订单已创建（待支付），5分钟内可在"我的订单"中支付');
+            closeModal('seatModal');
+        }
+    });
+}
+function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+search();
+</script>
+</body>
+</html>

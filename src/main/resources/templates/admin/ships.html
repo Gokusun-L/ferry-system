@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: content(~{::body})}">
+<body>
+<div id="pageContent">
+    <div class="card">
+        <h3>船舶管理</h3>
+        <div class="toolbar">
+            <div class="form-group"><input type="text" id="sShipName" placeholder="船名"></div>
+            <button class="btn btn-primary" onclick="loadShips()">搜索</button>
+            <button class="btn btn-success" onclick="openEdit()">新增船舶</button>
+        </div>
+        <table>
+            <thead><tr><th>ID</th><th>船名</th><th>总座位数</th><th>类型</th><th>描述</th><th>操作</th></tr></thead>
+            <tbody id="shipTbody"></tbody>
+        </table>
+    </div>
+</div>
+
+<div class="modal-mask" id="editModal">
+    <div class="modal">
+        <h3 id="editTitle">新增船舶</h3>
+        <input type="hidden" id="eId">
+        <div class="form-group"><label>船名</label><input type="text" id="eShipName"></div>
+        <div class="form-group"><label>总座位数</label><input type="number" id="eTotalSeats"></div>
+        <div class="form-group">
+            <label>类型</label>
+            <select id="eShipType">
+                <option value="NORMAL">普通船</option>
+                <option value="HIGHSPEED">高速船</option>
+                <option value="LUXURY">豪华船</option>
+            </select>
+        </div>
+        <div class="form-group"><label>描述</label><textarea id="eDescription"></textarea></div>
+        <button class="btn btn-primary" onclick="saveShip()">保存</button>
+        <button class="btn" onclick="closeModal('editModal')">取消</button>
+    </div>
+</div>
+
+<script class="page-script">
+function loadShips() {
+    fetch('/api/ships?shipName=' + document.getElementById('sShipName').value).then(r => r.json()).then(res => {
+        var html = '';
+        res.data.forEach(s => {
+            html += '<tr><td>' + s.id + '</td><td>' + s.shipName + '</td><td>' + s.totalSeats + '</td>' +
+                '<td>' + shipTypeText(s.shipType) + '</td><td>' + (s.description || '') + '</td>' +
+                '<td><button class="btn btn-sm btn-primary" onclick="openEdit(' + s.id + ')">编辑</button> ' +
+                '<button class="btn btn-sm btn-danger" onclick="delShip(' + s.id + ')">删除</button></td></tr>';
+        });
+        document.getElementById('shipTbody').innerHTML = html;
+    });
+}
+function openEdit(id) {
+    document.getElementById('editTitle').textContent = id ? '编辑船舶' : '新增船舶';
+    document.getElementById('eId').value = id || '';
+    if (id) {
+        fetch('/api/ships').then(r => r.json()).then(res => {
+            var ship = res.data.find(x => x.id === id);
+            document.getElementById('eShipName').value = ship.shipName;
+            document.getElementById('eTotalSeats').value = ship.totalSeats;
+            document.getElementById('eShipType').value = ship.shipType;
+            document.getElementById('eDescription').value = ship.description || '';
+        });
+    } else {
+        document.getElementById('eShipName').value = '';
+        document.getElementById('eTotalSeats').value = '';
+        document.getElementById('eShipType').value = 'NORMAL';
+        document.getElementById('eDescription').value = '';
+    }
+    document.getElementById('editModal').classList.add('show');
+}
+function saveShip() {
+    var id = document.getElementById('eId').value;
+    var body = {
+        shipName: document.getElementById('eShipName').value,
+        totalSeats: parseInt(document.getElementById('eTotalSeats').value),
+        shipType: document.getElementById('eShipType').value,
+        description: document.getElementById('eDescription').value
+    };
+    var url = id ? '/api/ships/' + id : '/api/ships';
+    var method = id ? 'PUT' : 'POST';
+    api(url, method, body).then(res => {
+        if (res.code === 0) { closeModal('editModal'); loadShips(); }
+        else alert(res.msg);
+    });
+}
+function delShip(id) {
+    if (!confirm('确定删除该船舶？')) return;
+    api('/api/ships/' + id, 'DELETE').then(res => {
+        if (res.code === 0) loadShips(); else alert(res.msg);
+    });
+}
+function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+loadShips();
+</script>
+</body>
+</html>
