@@ -20,8 +20,10 @@
 ```
 ferry-system/
 ├── sql/
-│   ├── 01_schema.sql     # 建库建表（含全部约束）
-│   └── 02_data.sql       # 测试数据初始化
+│   ├── 01_schema.sql           # 建库建表（含全部约束）
+│   ├── 02_data.sql             # 测试数据初始化
+│   └── 03_migration_1_1.sql    # 旧库升级脚本（新增通知表与座位锁字段）
+├── docs/                       # 设计文档、测试报告、分工表、报表插图
 ├── src/main/java/com/ferry/
 │   ├── controller/       # 控制层
 │   ├── service/          # 业务层（接口 + impl 实现）
@@ -52,6 +54,8 @@ source sql/02_data.sql
 
 或者直接在 DataGrip 中打开这两个脚本逐个运行。
 
+> 新环境只需执行 01、02；如果本机已有旧版 `ferry_db`，再执行 `sql/03_migration_1_1.sql` 升级。
+
 ### 2. 修改数据库连接
 
 编辑 `src/main/resources/application.yml`：
@@ -61,7 +65,7 @@ spring:
   datasource:
     url: jdbc:mysql://localhost:3306/ferry_db?...
     username: root      # 改成你的账号
-    password: root      # 改成你的密码
+    password: ""        # 改成你的密码
 ```
 
 ### 3. 启动
@@ -92,6 +96,7 @@ java -jar target/ferry-system-1.0.0.jar
 3. **售票与订单**：选座锁定5分钟、下单、模拟支付、超时释放、退票（分档手续费）、改签、售票员线下售票
 4. **检票**：检票校验、检票记录、检票统计
 5. **统计报表**：售票统计、上座率、收入、退票统计、EasyExcel 导出
+6. **消息通知**：班次取消、退票成功、改签结果通知，顶部铃铛未读数轮询
 
 ## 考核要点实现对照
 
@@ -110,6 +115,17 @@ java -jar target/ferry-system-1.0.0.jar
 
 ## 数据库表设计
 
-10 张表：user、route、ship、schedule、ship_seat、schedule_seat、orders、ticket、refund、reschedule。
+11 张表：user、route、ship、schedule、ship_seat、schedule_seat、orders、ticket、refund、reschedule、notification。
 
 ER 关系详见 `docs/ER模型与关系模式设计.md`。
+
+## 两人分工与学习入口
+
+完整分工见 [`docs/两人分工表.md`](docs/两人分工表.md)，按业务域纵向切分，每人负责两个模块，从建表到页面全包：
+
+| 成员 | 负责模块 | 建议学习顺序 |
+|---|---|---|
+| 成员甲 | 用户权限与通知；航线、船舶、班次与座位 | 先看 `sql/01_schema.sql` 中 user/route/ship/schedule 相关表 → `UserServiceImpl` 登录与权限 → `ManageController`/`ScheduleServiceImpl` → `templates/admin/` 对应页面 |
+| 成员乙 | 售票订单退改签；检票统计与导出 | 先看 orders/ticket/refund/reschedule 表 → `OrderServiceImpl` 下单/支付/退票/改签 → `StatsMapper.xml` 与 `StatsServiceImpl` → `templates/passenger/`、`seller/`、`admin/stats.html` |
+
+协作者上手顺序：克隆仓库 → 导入 01、02 两个 SQL → 修改 `application.yml` 数据库账号密码 → `mvn spring-boot:run` → 用测试账号走一遍自己负责模块的主流程。
