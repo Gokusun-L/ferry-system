@@ -7,7 +7,13 @@
             <h2 style="margin-bottom:6px;">轮渡码头客运统计报表</h2>
             <p id="printRange" style="color:#475569;"></p>
         </div>
-        <h3>统计报表</h3>
+        <div class="card-head">
+            <div class="icon-chip">📊</div>
+            <div class="head-text">
+                <h3>统计报表</h3>
+                <p class="card-desc">售票、退票与上座率多维数据统计</p>
+            </div>
+        </div>
         <div class="toolbar">
             <div class="form-group"><label>开始日期</label><input type="date" id="startDate"></div>
             <div class="form-group"><label>结束日期</label><input type="date" id="endDate"></div>
@@ -61,13 +67,13 @@ function loadAll() {
     api('/api/stats/income?start=' + start + '&end=' + end).then(res => {
         var d = res.data || {};
         document.getElementById('incomeGrid').innerHTML =
-            '<div class="stat-card"><div class="label">售票量（张）</div><div class="value">' + (d.sale_count || 0) + '</div></div>' +
-            '<div class="stat-card"><div class="label">总收入</div><div class="value">¥' + money(d.total_income) + '</div></div>' +
-            '<div class="stat-card"><div class="label">退票量（张）</div><div class="value" style="color:#f59e0b">' + (d.refund_count || 0) + '</div></div>' +
-            '<div class="stat-card"><div class="label">退票金额</div><div class="value" style="color:#ef4444">¥' + money(d.refund_loss) + '</div></div>' +
-            '<div class="stat-card"><div class="label">退票手续费</div><div class="value" style="color:#64748b">¥' + money(d.refund_fee) + '</div></div>' +
-            '<div class="stat-card"><div class="label">净收入</div><div class="value" style="color:#10b981">¥' + money(d.net_income) + '</div></div>' +
-            '<div class="stat-card"><div class="label">退票率</div><div class="value" style="color:#f59e0b">' + (d.refund_rate || 0) + '%</div></div>';
+            '<div class="stat-card"><div class="label">售票量（张）</div><div class="value">' + (d.saleCount || 0) + '</div></div>' +
+            '<div class="stat-card"><div class="label">总收入</div><div class="value">¥' + money(d.totalIncome) + '</div></div>' +
+            '<div class="stat-card"><div class="label">退票量（张）</div><div class="value" style="color:#f59e0b">' + (d.refundCount || 0) + '</div></div>' +
+            '<div class="stat-card"><div class="label">退票金额</div><div class="value" style="color:#ef4444">¥' + money(d.refundLoss) + '</div></div>' +
+            '<div class="stat-card"><div class="label">退票手续费</div><div class="value" style="color:#64748b">¥' + money(d.refundFee) + '</div></div>' +
+            '<div class="stat-card"><div class="label">净收入</div><div class="value" style="color:#10b981">¥' + money(d.netIncome) + '</div></div>' +
+            '<div class="stat-card"><div class="label">退票率</div><div class="value" style="color:#f59e0b">' + (d.refundRate || 0) + '%</div></div>';
         document.getElementById('printRange').textContent =
             '统计区间：' + start + ' 至 ' + end + '　　生成时间：' + new Date().toLocaleString();
     });
@@ -78,7 +84,7 @@ function loadAll() {
         var html = '<table><thead><tr><th>排名</th><th>售票员</th><th>售票量（张）</th><th>售票金额</th></tr></thead><tbody>';
         if (!res.data || res.data.length === 0) html += '<tr><td colspan="4">暂无数据</td></tr>';
         (res.data || []).forEach((s, i) => {
-            html += '<tr><td>' + (i + 1) + '</td><td>' + s.seller_name + '</td><td>' + s.sale_count + '</td><td>¥' + money(s.sale_amount) + '</td></tr>';
+            html += '<tr><td>' + (i + 1) + '</td><td>' + s.sellerName + '</td><td>' + s.saleCount + '</td><td>¥' + money(s.saleAmount) + '</td></tr>';
         });
         html += '</tbody></table>';
         document.getElementById('sellerTable').innerHTML = html;
@@ -86,12 +92,12 @@ function loadAll() {
 
     api('/api/stats/by-route?start=' + start + '&end=' + end).then(res => {
         var rows = res.data || [];
-        var total = rows.reduce((sum, s) => sum + Number(s.sale_amount || 0), 0);
+        var total = rows.reduce((sum, s) => sum + Number(s.saleAmount || 0), 0);
         var html = '<table><thead><tr><th>航线</th><th>售票量（张）</th><th>售票金额</th><th>收入占比</th></tr></thead><tbody>';
         if (rows.length === 0) html += '<tr><td colspan="4">暂无数据</td></tr>';
         rows.forEach(s => {
-            var share = total > 0 ? (Number(s.sale_amount || 0) / total * 100) : 0;
-            html += '<tr><td>' + s.route_name + '</td><td>' + s.sale_count + '</td><td>¥' + money(s.sale_amount) + '</td>' +
+            var share = total > 0 ? (Number(s.saleAmount || 0) / total * 100) : 0;
+            html += '<tr><td>' + s.routeName + '</td><td>' + s.saleCount + '</td><td>¥' + money(s.saleAmount) + '</td>' +
                 '<td>' + share.toFixed(2) + '%</td></tr>';
         });
         html += '</tbody></table>';
@@ -102,8 +108,8 @@ function loadAll() {
         var html = '<table><thead><tr><th>发船时间</th><th>航线</th><th>售票量（张）</th><th>退票数</th><th>收入</th></tr></thead><tbody>';
         if (!res.data || res.data.length === 0) html += '<tr><td colspan="5">暂无数据</td></tr>';
         (res.data || []).forEach(s => {
-            html += '<tr><td>' + s.depart_time + '</td><td>' + s.route_name + '</td>' +
-                '<td>' + s.sale_count + '</td><td>' + (s.refund_count || 0) + '</td><td>¥' + money(s.income) + '</td></tr>';
+            html += '<tr><td>' + s.departTime + '</td><td>' + s.routeName + '</td>' +
+                '<td>' + s.saleCount + '</td><td>' + (s.refundCount || 0) + '</td><td>¥' + money(s.income) + '</td></tr>';
         });
         html += '</tbody></table>';
         document.getElementById('scheduleTable').innerHTML = html;
@@ -115,8 +121,8 @@ function loadAll() {
         (res.data || []).forEach(s => {
             var occ = Number(s.occupancy || 0);
             var cls = occ < 50 ? 'low-occupancy' : '';
-            html += '<tr><td>' + s.route_name + '</td><td>' + s.depart_time + '</td><td>' + s.ship_name + '</td>' +
-                '<td>' + s.total_seats + '</td><td>' + s.sold_count + '</td><td class="' + cls + '">' + occ.toFixed(2) + '%</td></tr>';
+            html += '<tr><td>' + s.routeName + '</td><td>' + s.departTime + '</td><td>' + s.shipName + '</td>' +
+                '<td>' + s.totalSeats + '</td><td>' + s.soldCount + '</td><td class="' + cls + '">' + occ.toFixed(2) + '%</td></tr>';
         });
         html += '</tbody></table>';
         document.getElementById('occupancyTable').innerHTML = html;
@@ -126,9 +132,9 @@ function loadAll() {
         var html = '<table><thead><tr><th>排名</th><th>航线</th><th>平均上座率</th></tr></thead><tbody>';
         if (!res.data || res.data.length === 0) html += '<tr><td colspan="3">暂无数据</td></tr>';
         (res.data || []).forEach((s, i) => {
-            var occ = Number(s.avg_occupancy || 0);
+            var occ = Number(s.avgOccupancy || 0);
             var cls = occ < 50 ? 'low-occupancy' : '';
-            html += '<tr><td>' + (i + 1) + '</td><td>' + s.route_name + '</td><td class="' + cls + '">' + occ.toFixed(2) + '%</td></tr>';
+            html += '<tr><td>' + (i + 1) + '</td><td>' + s.routeName + '</td><td class="' + cls + '">' + occ.toFixed(2) + '%</td></tr>';
         });
         html += '</tbody></table>';
         document.getElementById('routeOccTable').innerHTML = html;
@@ -138,9 +144,9 @@ function loadAll() {
         var html = '<table><thead><tr><th>时间段</th><th>班次数</th><th>平均上座率</th></tr></thead><tbody>';
         if (!res.data || res.data.length === 0) html += '<tr><td colspan="3">暂无数据</td></tr>';
         (res.data || []).forEach(s => {
-            var occ = Number(s.avg_occupancy || 0);
+            var occ = Number(s.avgOccupancy || 0);
             var cls = occ < 50 ? 'low-occupancy' : '';
-            html += '<tr><td>' + s.period + '</td><td>' + s.schedule_count + '</td><td class="' + cls + '">' + occ.toFixed(2) + '%</td></tr>';
+            html += '<tr><td>' + s.period + '</td><td>' + s.scheduleCount + '</td><td class="' + cls + '">' + occ.toFixed(2) + '%</td></tr>';
         });
         html += '</tbody></table>';
         document.getElementById('periodOccTable').innerHTML = html;
@@ -150,8 +156,8 @@ function loadAll() {
         var html = '<table><thead><tr><th>航线</th><th>发船时间</th><th>总座位</th><th>已售</th><th>上座率</th></tr></thead><tbody>';
         if (!res.data || res.data.length === 0) html += '<tr><td colspan="5">无低上座率班次</td></tr>';
         (res.data || []).forEach(s => {
-            html += '<tr><td>' + s.route_name + '</td><td>' + s.depart_time + '</td><td>' + s.total_seats + '</td>' +
-                '<td>' + s.sold_count + '</td><td class="low-occupancy">' + Number(s.occupancy || 0).toFixed(2) + '%</td></tr>';
+            html += '<tr><td>' + s.routeName + '</td><td>' + s.departTime + '</td><td>' + s.totalSeats + '</td>' +
+                '<td>' + s.soldCount + '</td><td class="low-occupancy">' + Number(s.occupancy || 0).toFixed(2) + '%</td></tr>';
         });
         html += '</tbody></table>';
         document.getElementById('lowOccTable').innerHTML = html;
@@ -161,8 +167,8 @@ function loadAll() {
         var html = '<table><thead><tr><th>退票原因</th><th>退票数</th><th>退票金额</th><th>手续费</th></tr></thead><tbody>';
         if (!res.data || res.data.length === 0) html += '<tr><td colspan="4">无退票记录</td></tr>';
         (res.data || []).forEach(s => {
-            html += '<tr><td>' + (s.reason || '未填写') + '</td><td>' + s.refund_count + '</td>' +
-                '<td>¥' + money(s.refund_amount) + '</td><td>¥' + money(s.fee_amount) + '</td></tr>';
+            html += '<tr><td>' + (s.reason || '未填写') + '</td><td>' + s.refundCount + '</td>' +
+                '<td>¥' + money(s.refundAmount) + '</td><td>¥' + money(s.feeAmount) + '</td></tr>';
         });
         html += '</tbody></table>';
         document.getElementById('refundTable').innerHTML = html;
@@ -178,9 +184,9 @@ function loadPeriod() {
         var html = '<table><thead><tr><th>' + label + '</th><th>售票量（张）</th><th>售票金额</th><th>退票量</th><th>退票金额</th><th>净收入</th></tr></thead><tbody>';
         if (!res.data || res.data.length === 0) html += '<tr><td colspan="6">暂无数据</td></tr>';
         (res.data || []).forEach(s => {
-            var net = Number(s.sale_amount || 0) - Number(s.refund_amount || 0);
-            html += '<tr><td>' + s.period + '</td><td>' + s.sale_count + '</td><td>¥' + money(s.sale_amount) + '</td>' +
-                '<td>' + s.refund_count + '</td><td>¥' + money(s.refund_amount) + '</td><td>¥' + money(net) + '</td></tr>';
+            var net = Number(s.saleAmount || 0) - Number(s.refundAmount || 0);
+            html += '<tr><td>' + s.period + '</td><td>' + s.saleCount + '</td><td>¥' + money(s.saleAmount) + '</td>' +
+                '<td>' + s.refundCount + '</td><td>¥' + money(s.refundAmount) + '</td><td>¥' + money(net) + '</td></tr>';
         });
         html += '</tbody></table>';
         document.getElementById('periodTable').innerHTML = html;

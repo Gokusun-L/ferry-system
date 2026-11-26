@@ -2,8 +2,34 @@
 <html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: content(~{::body})}">
 <body>
 <div id="pageContent">
-    <h2 th:text="'欢迎，' + ${user.name}">欢迎</h2>
-    <p style="margin-top:12px;color:#64748b;">请从左侧菜单选择功能模块。</p>
+    <div class="hero-banner">
+        <div class="hero-text">
+            <h2 th:text="'你好，' + ${user.name} + '！'">你好！</h2>
+            <p>欢迎回来，旅客。轻松规划海上行程，查询班次、购买与管理您的船票。</p>
+        </div>
+    </div>
+    <div class="quick-grid">
+        <a th:href="@{/passenger/search}" class="quick-card">
+            <div class="icon-chip">🔍</div>
+            <div class="q-title">班次查询</div>
+            <div class="q-desc">按航线与日期查询班次时刻</div>
+        </a>
+        <a th:href="@{/passenger/orders}" class="quick-card">
+            <div class="icon-chip">📦</div>
+            <div class="q-title">我的订单</div>
+            <div class="q-desc">查看历史购票订单记录</div>
+        </a>
+        <a th:href="@{/passenger/tickets}" class="quick-card">
+            <div class="icon-chip">🎟️</div>
+            <div class="q-title">我的船票</div>
+            <div class="q-desc">管理已购买的船票</div>
+        </a>
+        <a th:href="@{/profile}" class="quick-card">
+            <div class="icon-chip">👤</div>
+            <div class="q-title">个人中心</div>
+            <div class="q-desc">查看与修改个人信息</div>
+        </a>
+    </div>
 </div>
 </body>
 </html>

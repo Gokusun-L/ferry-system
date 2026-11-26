@@ -2,8 +2,34 @@
 <html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: content(~{::body})}">
 <body>
 <div id="pageContent">
-    <h2 th:text="'欢迎，' + ${user.name}">欢迎</h2>
-    <p style="margin-top:12px;color:#64748b;">请从左侧菜单选择功能模块。</p>
+    <div class="hero-banner">
+        <div class="hero-text">
+            <h2 th:text="'你好，' + ${user.name} + '！'">你好！</h2>
+            <p>欢迎回来，售票员。高效服务旅客，快速完成售票、检票与退票业务。</p>
+        </div>
+    </div>
+    <div class="quick-grid">
+        <a th:href="@{/seller/sell}" class="quick-card">
+            <div class="icon-chip">🎫</div>
+            <div class="q-title">线下售票</div>
+            <div class="q-desc">为旅客现场办理购票出票</div>
+        </a>
+        <a th:href="@{/seller/checkin}" class="quick-card">
+            <div class="icon-chip">✅</div>
+            <div class="q-title">检票</div>
+            <div class="q-desc">核验船票并办理旅客登船</div>
+        </a>
+        <a th:href="@{/seller/refund}" class="quick-card">
+            <div class="icon-chip">↩️</div>
+            <div class="q-title">退票处理</div>
+            <div class="q-desc">受理旅客退票并原路退款</div>
+        </a>
+        <a th:href="@{/seller/stats}" class="quick-card">
+            <div class="icon-chip">🏆</div>
+            <div class="q-title">我的业绩</div>
+            <div class="q-desc">查看个人售票业绩统计</div>
+        </a>
+    </div>
 </div>
 </body>
 </html>

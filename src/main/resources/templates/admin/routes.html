@@ -3,7 +3,13 @@
 <body>
 <div id="pageContent">
     <div class="card">
-        <h3>航线管理</h3>
+        <div class="card-head">
+            <div class="icon-chip">🗺️</div>
+            <div class="head-text">
+                <h3>航线管理</h3>
+                <p class="card-desc">维护渡轮航线信息，支持新增、编辑与删除</p>
+            </div>
+        </div>
         <div class="toolbar">
             <div class="form-group"><input type="text" id="sRouteName" placeholder="航线名称"></div>
             <div class="form-group"><input type="text" id="sDepartPort" placeholder="出发港口"></div>
@@ -30,8 +36,10 @@
         </div>
         <div class="form-group"><label>航行时长(分钟)</label><input type="number" id="eDuration"></div>
         <div class="form-group"><label>描述</label><textarea id="eDescription"></textarea></div>
-        <button class="btn btn-primary" onclick="saveRoute()">保存</button>
-        <button class="btn" onclick="closeModal('editModal')">取消</button>
+        <div class="modal-actions">
+            <button class="btn btn-primary" onclick="saveRoute()">保存</button>
+            <button class="btn" onclick="closeModal('editModal')">取消</button>
+        </div>
     </div>
 </div>
 
@@ -39,7 +47,9 @@
     <div class="modal">
         <h3>航线详情</h3>
         <div id="routeDetail"></div>
-        <button class="btn" onclick="closeModal('detailModal')">关闭</button>
+        <div class="modal-actions">
+            <button class="btn" onclick="closeModal('detailModal')">关闭</button>
+        </div>
     </div>
 </div>
 
@@ -124,13 +134,14 @@ function showDetail(id) {
         fetch('/api/schedules?page=1&size=100&routeId=' + id).then(r => r.json()).then(result => {
             var list = (result.data && result.data.list) || [];
             var statusMap = {PENDING: '待发布', SELLING: '售票中', DEPARTED: '已发船', FINISHED: '已完成', CANCELLED: '已取消'};
+            var pillMap = {PENDING: 'pill-warning', SELLING: 'pill-info', FINISHED: 'pill-success', CANCELLED: 'pill-muted'};
             var html = '<table><thead><tr><th>发船时间</th><th>到达时间</th><th>船舶</th><th>票价</th><th>状态</th><th>余票</th></tr></thead><tbody>';
             if (list.length === 0) html += '<tr><td colspan="6">暂无班次</td></tr>';
             list.forEach(s => {
                 var total = s.totalSeats || 0;
                 var remain = total - (s.soldCount || 0);
                 html += '<tr><td>' + s.departTime + '</td><td>' + s.arriveTime + '</td><td>' + (s.shipName || '') + '</td>' +
-                    '<td>¥' + Number(s.price).toFixed(2) + '</td><td>' + (statusMap[s.status] || s.status) + '</td><td>' + remain + '</td></tr>';
+                    '<td>¥' + Number(s.price).toFixed(2) + '</td><td>' + (pillMap[s.status] ? '<span class="pill ' + pillMap[s.status] + '">' + (statusMap[s.status] || s.status) + '</span>' : (statusMap[s.status] || s.status)) + '</td><td>' + remain + '</td></tr>';
             });
             html += '</tbody></table>';
             document.getElementById('routeScheduleDetail').innerHTML = html;

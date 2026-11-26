@@ -2,6 +2,7 @@ package com.ferry.controller;
 
 import com.ferry.common.BizException;
 import com.ferry.common.LoginUser;
+import com.ferry.common.PageResult;
 import com.ferry.common.RequireRole;
 import com.ferry.common.Result;
 import com.ferry.entity.Order;
@@ -109,32 +110,32 @@ public class OrderController {
     /** 我的订单 */
     @RequireRole("PASSENGER")
     @GetMapping("/orders/my")
-    public Result<Map<String, Object>> myOrders(@RequestParam(defaultValue = "1") int page,
-                                                @RequestParam(defaultValue = "10") int size,
-                                                @RequestParam(required = false) String status,
-                                                HttpSession session) {
+    public Result<PageResult<Order>> myOrders(@RequestParam(defaultValue = "1") int page,
+                                              @RequestParam(defaultValue = "10") int size,
+                                              @RequestParam(required = false) String status,
+                                              HttpSession session) {
         LoginUser user = (LoginUser) session.getAttribute("loginUser");
-        Map<String, Object> data = new HashMap<>();
-        data.put("list", orderService.listByUser(user.getId(), status, page, size));
-        data.put("total", orderService.countByUser(user.getId(), status));
-        return Result.ok(data);
+        return Result.ok(PageResult.of(
+                orderService.listByUser(user.getId(), status, page, size),
+                orderService.countByUser(user.getId(), status),
+                page, size));
     }
 
     /** 订单列表（管理端） */
     @RequireRole({"ADMIN", "SELLER"})
     @GetMapping("/orders")
-    public Result<Map<String, Object>> listOrders(@RequestParam(defaultValue = "1") int page,
-                                                  @RequestParam(defaultValue = "10") int size,
-                                                  @RequestParam(required = false) String date,
-                                                  @RequestParam(required = false) Long scheduleId,
-                                                  @RequestParam(required = false) String passengerName,
-                                                  HttpSession session) {
+    public Result<PageResult<Order>> listOrders(@RequestParam(defaultValue = "1") int page,
+                                                @RequestParam(defaultValue = "10") int size,
+                                                @RequestParam(required = false) String date,
+                                                @RequestParam(required = false) Long scheduleId,
+                                                @RequestParam(required = false) String passengerName,
+                                                HttpSession session) {
         LoginUser user = (LoginUser) session.getAttribute("loginUser");
         Long sellerId = "SELLER".equals(user.getRole()) ? user.getId() : null;
-        Map<String, Object> data = new HashMap<>();
-        data.put("list", orderService.search(date, scheduleId, passengerName, sellerId, page, size));
-        data.put("total", orderService.countSearch(date, scheduleId, passengerName, sellerId));
-        return Result.ok(data);
+        return Result.ok(PageResult.of(
+                orderService.search(date, scheduleId, passengerName, sellerId, page, size),
+                orderService.countSearch(date, scheduleId, passengerName, sellerId),
+                page, size));
     }
 
     /** 按订单号查询（售票员退票用，仅本人售出） */
@@ -191,13 +192,6 @@ public class OrderController {
         LoginUser user = (LoginUser) session.getAttribute("loginUser");
         orderService.unlockSeats(scheduleId, seatNos, user.getId());
         return Result.ok();
-    }
-
-    /** 班次座位图（含乘客信息，仅管理端与售票员可用） */
-    @RequireRole({"ADMIN", "SELLER"})
-    @GetMapping("/schedules/{id}/seats")
-    public Result<List<Ticket>> scheduleSeats(@PathVariable Long id) {
-        return Result.ok(orderService.listTicketsBySchedule(id));
     }
 
     /** 我的船票 */

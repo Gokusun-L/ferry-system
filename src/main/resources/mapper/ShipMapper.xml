@@ -6,7 +6,7 @@
         id, ship_name, total_seats, ship_type, description, deleted, created_at, updated_at
     </sql>
 
-    <select id="search" resultType="Ship">
+    <select id="searchPage" resultType="Ship">
         SELECT <include refid="cols"/> FROM ship
         <where>
             deleted = 0
@@ -15,6 +15,17 @@
             </if>
         </where>
         ORDER BY id DESC
+        LIMIT #{offset}, #{size}
+    </select>
+
+    <select id="count" resultType="int">
+        SELECT COUNT(*) FROM ship
+        <where>
+            deleted = 0
+            <if test="shipName != null and shipName != ''">
+                AND ship_name LIKE CONCAT('%', #{shipName}, '%')
+            </if>
+        </where>
     </select>
 
     <select id="findById" resultType="Ship">

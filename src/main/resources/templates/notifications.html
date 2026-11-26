@@ -3,8 +3,12 @@
 <body>
 <div id="pageContent">
     <div class="card">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-            <h3 style="margin:0;">消息通知</h3>
+        <div class="card-head">
+            <div class="icon-chip">🔔</div>
+            <div class="head-text">
+                <h3>消息通知</h3>
+                <p class="card-desc">查看班次变更、退票与改签等消息</p>
+            </div>
             <button class="btn btn-sm btn-primary" onclick="readAll()">全部标记为已读</button>
         </div>
         <div id="noticeList" style="min-height:80px;"></div>

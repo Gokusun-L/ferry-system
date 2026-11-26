@@ -3,7 +3,13 @@
 <body>
 <div id="pageContent">
     <div class="card">
-        <h3>检票</h3>
+        <div class="card-head">
+            <div class="icon-chip">✅</div>
+            <div class="head-text">
+                <h3>检票</h3>
+                <p class="card-desc">核验船票或订单号，完成检票</p>
+            </div>
+        </div>
         <div class="toolbar">
             <div class="form-group"><input type="date" id="cDate" onchange="loadSchedules()"></div>
             <div class="form-group">
@@ -16,7 +22,13 @@
     </div>
 
     <div class="card">
-        <h3>班次检票统计</h3>
+        <div class="card-head">
+            <div class="icon-chip">📊</div>
+            <div class="head-text">
+                <h3>班次检票统计</h3>
+                <p class="card-desc">查看各班次已检票与未检票情况</p>
+            </div>
+        </div>
         <div class="form-group" style="max-width:260px;">
             <select id="statScheduleId"><option value="">请选择班次</option></select>
         </div>

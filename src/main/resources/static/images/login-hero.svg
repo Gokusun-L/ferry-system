@@ -1,0 +1,100 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 1600" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#081426"/>
+      <stop offset="0.45" stop-color="#123a6d"/>
+      <stop offset="0.75" stop-color="#0e6b8c"/>
+      <stop offset="1" stop-color="#0b1829"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#ffb45e" stop-opacity="0.5"/>
+      <stop offset="1" stop-color="#ffb45e" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="sea1" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1b5e86"/>
+      <stop offset="1" stop-color="#0a2238"/>
+    </linearGradient>
+    <linearGradient id="hull" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#13263f"/>
+      <stop offset="1" stop-color="#070f1d"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="900" height="1600" fill="url(#sky)"/>
+
+  <!-- 星光 -->
+  <g fill="#cfe4ff" opacity="0.5">
+    <circle cx="130" cy="180" r="2.5"/>
+    <circle cx="260" cy="90" r="2"/>
+    <circle cx="420" cy="230" r="1.8"/>
+    <circle cx="620" cy="120" r="2.6"/>
+    <circle cx="770" cy="260" r="2"/>
+    <circle cx="560" cy="330" r="1.6"/>
+    <circle cx="180" cy="420" r="2"/>
+    <circle cx="830" cy="450" r="2.2"/>
+    <circle cx="330" cy="540" r="1.6"/>
+    <circle cx="700" cy="620" r="1.8"/>
+  </g>
+
+  <!-- 落日光晕 -->
+  <circle cx="620" cy="700" r="330" fill="url(#glow)"/>
+  <circle cx="620" cy="700" r="85" fill="#ffc46b" opacity="0.85"/>
+  <circle cx="620" cy="700" r="56" fill="#ffe2ad"/>
+
+  <!-- 海面 -->
+  <path d="M0 1150 Q 225 1120 450 1150 T 900 1150 V 1600 H 0 Z" fill="url(#sea1)" opacity="0.95"/>
+  <path d="M0 1240 Q 225 1208 450 1240 T 900 1240 V 1600 H 0 Z" fill="#0d2c46" opacity="0.85"/>
+  <path d="M0 1330 Q 240 1298 480 1330 T 900 1330 V 1600 H 0 Z" fill="#081c30" opacity="0.9"/>
+  <path d="M0 1440 Q 260 1412 520 1440 T 900 1440 V 1600 H 0 Z" fill="#041019" opacity="0.9"/>
+
+  <!-- 落日倒影 -->
+  <g opacity="0.35">
+    <rect x="600" y="1150" width="40" height="60" rx="20" fill="#ffb45e"/>
+    <rect x="592" y="1210" width="56" height="40" rx="20" fill="#ff9d45" opacity="0.7"/>
+    <rect x="596" y="1250" width="48" height="36" rx="18" fill="#ff7e33" opacity="0.5"/>
+  </g>
+
+  <!-- 海鸥 -->
+  <g stroke="#dbeafe" stroke-width="5" fill="none" stroke-linecap="round" opacity="0.85">
+    <path d="M170 380 q 22 -16 44 0 q 22 -16 44 0"/>
+    <path d="M380 300 q 16 -12 32 0 q 16 -12 32 0" stroke-width="4"/>
+    <path d="M700 430 q 20 -14 40 0 q 20 -14 40 0" stroke-width="4.5"/>
+  </g>
+
+  <!-- 渡轮 -->
+  <g>
+    <!-- 烟囱烟 -->
+    <g opacity="0.25" fill="#cfd8e8">
+      <circle cx="416" cy="760" r="10"/>
+      <circle cx="428" cy="726" r="15"/>
+      <circle cx="444" cy="686" r="21"/>
+      <circle cx="462" cy="646" r="27"/>
+    </g>
+    <!-- 烟囱 -->
+    <path d="M392 840 L392 776 L444 776 L444 840 Z" fill="#0d1a33"/>
+    <rect x="388" y="772" width="60" height="10" rx="5" fill="#16294a"/>
+    <rect x="386" y="840" width="64" height="6" fill="#1a3054"/>
+    <!-- 上层建筑 -->
+    <rect x="330" y="840" width="240" height="116" rx="12" fill="#0f1f3a"/>
+    <rect x="330" y="840" width="240" height="10" rx="5" fill="#1c3760"/>
+    <!-- 驾驶室 -->
+    <rect x="530" y="806" width="70" height="44" rx="8" fill="#0f1f3a"/>
+    <rect x="538" y="812" width="54" height="26" rx="5" fill="#9fd7f2" opacity="0.9"/>
+    <!-- 上层窗 -->
+    <g fill="#ffd98a" opacity="0.95">
+      <circle cx="358" cy="874" r="7"/><circle cx="390" cy="874" r="7"/><circle cx="422" cy="874" r="7"/><circle cx="454" cy="874" r="7"/><circle cx="486" cy="874" r="7"/><circle cx="518" cy="874" r="7"/>
+      <circle cx="358" cy="914" r="7"/><circle cx="390" cy="914" r="7"/><circle cx="422" cy="914" r="7"/><circle cx="454" cy="914" r="7"/><circle cx="486" cy="914" r="7"/><circle cx="518" cy="914" r="7"/>
+    </g>
+    <!-- 主甲板船体 -->
+    <path d="M262 952 L664 952 L604 1096 L320 1096 Z" fill="url(#hull)"/>
+    <rect x="262" y="948" width="402" height="10" rx="5" fill="#1e3a63"/>
+    <rect x="320" y="1096" width="284" height="8" fill="#0a1c34"/>
+    <!-- 船体窗 -->
+    <g fill="#8fd3ef" opacity="0.8">
+      <circle cx="352" cy="1020" r="6"/><circle cx="392" cy="1020" r="6"/><circle cx="432" cy="1020" r="6"/>
+      <circle cx="472" cy="1020" r="6"/><circle cx="512" cy="1020" r="6"/><circle cx="552" cy="1020" r="6"/>
+    </g>
+    <!-- 船头水花 -->
+    <path d="M700 1050 q 40 6 78 -2 q -30 22 -60 30 q 26 8 48 2" stroke="#bde3f7" stroke-width="6" fill="none" stroke-linecap="round" opacity="0.6"/>
+  </g>
+</svg>

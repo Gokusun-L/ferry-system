@@ -38,6 +38,8 @@ public class NotificationController {
         data.put("list", list);
         data.put("total", notificationDao.countByUser(user.getId()));
         data.put("unread", notificationDao.countUnread(user.getId()));
+        data.put("page", p);
+        data.put("size", s);
         return Result.ok(data);
     }
 

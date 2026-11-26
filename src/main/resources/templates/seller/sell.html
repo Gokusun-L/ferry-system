@@ -3,7 +3,13 @@
 <body>
 <div id="pageContent">
     <div class="card">
-        <h3>线下售票</h3>
+        <div class="card-head">
+            <div class="icon-chip">🎫</div>
+            <div class="head-text">
+                <h3>线下售票</h3>
+                <p class="card-desc">为乘客现场购票并打印船票</p>
+            </div>
+        </div>
         <div class="toolbar">
             <div class="form-group"><select id="sRouteId"><option value="">全部航线</option></select></div>
             <div class="form-group"><input type="date" id="sDate"></div>
@@ -17,15 +23,26 @@
 </div>
 
 <div class="modal-mask" id="sellModal">
-    <div class="modal">
+    <div class="modal modal-lg">
         <h3>代乘客购票</h3>
         <input type="hidden" id="mScheduleId">
         <div class="form-group"><label>乘客姓名</label><input type="text" id="mName"></div>
         <div class="form-group"><label>身份证号</label><input type="text" id="mIdCard"></div>
         <div class="form-group"><label>手机号</label><input type="text" id="mPhone"></div>
-        <div class="form-group"><label>选择座位</label><div id="seatMap" class="seat-map"></div></div>
-        <button class="btn btn-primary" onclick="doSell()">确认购票</button>
-        <button class="btn" onclick="closeModal('sellModal')">取消</button>
+        <div class="form-group">
+            <label>选择座位</label>
+            <div class="seat-legend">
+                <span><span class="dot dot-avail"></span>可选</span>
+                <span><span class="dot dot-sel"></span>已选</span>
+                <span><span class="dot dot-lock"></span>他人锁定</span>
+                <span><span class="dot dot-sold"></span>已售</span>
+            </div>
+            <div id="seatMap" class="seat-map"></div>
+        </div>
+        <div class="modal-actions">
+            <button class="btn btn-primary" onclick="doSell()">确认购票</button>
+            <button class="btn" onclick="closeModal('sellModal')">取消</button>
+        </div>
     </div>
 </div>
 
@@ -33,8 +50,10 @@
     <div class="modal">
         <h3>船票（打印预览）</h3>
         <div id="ticketContent" style="border:2px dashed #333;padding:20px;text-align:center;"></div>
-        <button class="btn btn-primary" onclick="window.print()">打印</button>
-        <button class="btn" onclick="closeModal('ticketModal')">关闭</button>
+        <div class="modal-actions">
+            <button class="btn btn-primary" onclick="window.print()">打印</button>
+            <button class="btn" onclick="closeModal('ticketModal')">关闭</button>
+        </div>
     </div>
 </div>
 

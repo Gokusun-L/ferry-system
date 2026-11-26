@@ -3,7 +3,13 @@
 <body>
 <div id="pageContent">
     <div class="card">
-        <h3>班次查询</h3>
+        <div class="card-head">
+            <div class="icon-chip">🔍</div>
+            <div class="head-text">
+                <h3>班次查询</h3>
+                <p class="card-desc">按港口和日期查找班次，在线选座购票</p>
+            </div>
+        </div>
         <div class="toolbar">
             <div class="form-group"><input type="text" id="sDepartPort" placeholder="出发港口"></div>
             <div class="form-group"><input type="text" id="sArrivePort" placeholder="到达港口"></div>
@@ -18,17 +24,24 @@
 </div>
 
 <div class="modal-mask" id="seatModal">
-    <div class="modal" style="width:640px;">
+    <div class="modal modal-lg">
         <h3>选择座位</h3>
         <input type="hidden" id="mScheduleId">
         <div class="form-group"><label>座位图（点击选择，最多5张）</label>
-            <div style="font-size:12px;color:#6b7280;margin-bottom:6px;">白=可选 蓝=已选 黄=他人锁定 灰=已售</div>
+            <div class="seat-legend">
+                <span><i class="dot dot-avail"></i>可选</span>
+                <span><i class="dot dot-sel"></i>已选</span>
+                <span><i class="dot dot-lock"></i>他人锁定</span>
+                <span><i class="dot dot-sold"></i>已售</span>
+            </div>
             <div id="seatMap" class="seat-map" style="grid-template-columns:repeat(4,1fr);max-width:100%;"></div>
         </div>
         <div id="passengerForms"></div>
-        <div class="form-group"><label>总价</label><span id="totalPrice" style="font-size:20px;color:#ef4444;">¥0</span></div>
-        <button class="btn btn-primary" onclick="submitOrder()">提交订单</button>
-        <button class="btn" onclick="closeModal('seatModal')">取消</button>
+        <div class="form-group"><label>总价</label><span id="totalPrice" class="price-total">¥0</span></div>
+        <div class="modal-actions">
+            <button class="btn btn-primary" onclick="submitOrder()">提交订单</button>
+            <button class="btn" onclick="closeModal('seatModal')">取消</button>
+        </div>
     </div>
 </div>
 

@@ -5,7 +5,8 @@ import org.apache.ibatis.annotations.Param;
 import java.util.List;
 
 public interface ShipDao {
-    List<Ship> search(@Param("shipName") String shipName);
+    List<Ship> searchPage(@Param("shipName") String shipName, @Param("offset") int offset, @Param("size") int size);
+    int count(@Param("shipName") String shipName);
     Ship findById(@Param("id") Long id);
     int insert(Ship ship);
     int update(Ship ship);

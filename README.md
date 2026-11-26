@@ -98,6 +98,19 @@ java -jar target/ferry-system-1.0.0.jar
 5. **统计报表**：售票统计、上座率、收入、退票统计、EasyExcel 导出
 6. **消息通知**：班次取消、退票成功、改签结果通知，顶部铃铛未读数轮询
 
+## 界面设计（v3）
+
+设计语言参考 Linear / Vercel 后台与 SaaS 分栏登录形态，纯 CSS + Thymeleaf 实现（无前端框架、无构建工具）：
+
+- **布局**：深色近黑侧边栏（图标导航 + 激活态渐变高亮）+ 浅色毛玻璃顶栏（头像/角色/铃铛）
+- **品牌色**：海洋蓝 → 青渐变（`#2563eb → #0ea5c4`），用于按钮、激活态、统计卡顶条
+- **组件体系**：卡片头（渐变图标块 + 标题 + 描述）、状态胶囊（pill）、欢迎横幅（hero-banner）、快捷入口（quick-grid）、座位图例、弹窗动效
+- **角色首页**：欢迎横幅 + 四个快捷入口卡片
+- **登录/注册**：分栏布局——左侧表单、右侧品牌视觉区
+- **插画资源**：`src/main/resources/static/images/` 下三张手绘 SVG 插画（`login-hero.svg` 登录页、`hero-banner.svg` 首页横幅、`empty-state.svg` 空状态），可离线使用
+
+所有样式集中在 `src/main/resources/static/css/style.css`，页面结构以模板 `templates/layout.html` 为公共骨架。
+
 ## 考核要点实现对照
 
 | 考核点 | 实现位置 |

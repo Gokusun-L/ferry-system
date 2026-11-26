@@ -3,7 +3,13 @@
 <body>
 <div id="pageContent">
     <div class="card">
-        <h3>班次管理</h3>
+        <div class="card-head">
+            <div class="icon-chip">🕐</div>
+            <div class="head-text">
+                <h3>班次管理</h3>
+                <p class="card-desc">编排班次时刻，支持批量生成与状态流转</p>
+            </div>
+        </div>
         <div class="toolbar">
             <div class="form-group"><select id="sRouteId"><option value="">全部航线</option></select></div>
             <div class="form-group"><select id="sShipId"><option value="">全部船舶</option></select></div>
@@ -39,8 +45,10 @@
         <div class="form-group"><label>船舶</label><select id="eShipId"></select></div>
         <div class="form-group"><label>发船时间</label><input type="datetime-local" id="eDepartTime"></div>
         <div class="form-group"><label>票价(元)</label><input type="number" step="0.01" id="ePrice"></div>
-        <button class="btn btn-primary" onclick="saveSchedule()">保存</button>
-        <button class="btn" onclick="closeModal('editModal')">取消</button>
+        <div class="modal-actions">
+            <button class="btn btn-primary" onclick="saveSchedule()">保存</button>
+            <button class="btn" onclick="closeModal('editModal')">取消</button>
+        </div>
     </div>
 </div>
 
@@ -58,8 +66,10 @@
             <div class="form-group"><label>发船分钟</label><input type="number" id="bMinute" value="0" min="0" max="59"></div>
         </div>
         <div class="form-group"><label>票价(元)</label><input type="number" step="0.01" id="bPrice"></div>
-        <button class="btn btn-primary" onclick="doBatch()">生成</button>
-        <button class="btn" onclick="closeModal('batchModal')">取消</button>
+        <div class="modal-actions">
+            <button class="btn btn-primary" onclick="doBatch()">生成</button>
+            <button class="btn" onclick="closeModal('batchModal')">取消</button>
+        </div>
     </div>
 </div>
 
@@ -67,13 +77,19 @@
     <div class="modal">
         <h3>班次详情</h3>
         <div id="scheduleDetail"></div>
-        <button class="btn" onclick="closeModal('detailModal')">关闭</button>
+        <div class="modal-actions">
+            <button class="btn" onclick="closeModal('detailModal')">关闭</button>
+        </div>
     </div>
 </div>
 
 <script class="page-script">
 var page = 1;
 var editId = null;
+function statusPill(s) {
+    var m = {'UNPAID':'pill-warning','PENDING':'pill-warning','PAID':'pill-info','SELLING':'pill-info','FINISHED':'pill-success','COMPLETED':'pill-success','CANCELLED':'pill-muted','REFUNDED':'pill-muted','FAILED':'pill-danger'};
+    return m[s] ? '<span class="pill ' + m[s] + '">' + statusText(s) + '</span>' : statusText(s);
+}
 function loadOptions() {
     api('/api/routes/all').then(res => {
         var html = '<option value="">全部航线</option>';
@@ -114,7 +130,7 @@ function loadSchedules(p) {
             ops += '<button class="btn btn-sm btn-danger" onclick="delSchedule(' + s.id + ')">删除</button>';
             html += '<tr><td>' + s.id + '</td><td>' + s.routeName + '</td><td>' + s.shipName + '</td>' +
                 '<td>' + s.departTime + '</td><td>' + s.arriveTime + '</td><td>' + s.price + '</td>' +
-                '<td>' + statusText(s.status) + '</td><td>' + s.remainingSeats + '</td>' +
+                '<td>' + statusPill(s.status) + '</td><td>' + s.remainingSeats + '</td>' +
                 '<td>' + ops + '</td></tr>';
         });
         document.getElementById('scheduleTbody').innerHTML = html;
@@ -199,7 +215,7 @@ function showDetail(id) {
             '<p><b>发船时间：</b>' + s.departTime + '</p>' +
             '<p><b>到达时间：</b>' + s.arriveTime + '</p>' +
             '<p><b>票价：</b>¥' + s.price + '</p>' +
-            '<p><b>状态：</b>' + statusText(s.status) + '</p>' +
+            '<p><b>状态：</b>' + statusPill(s.status) + '</p>' +
             '<p><b>已售/总座位：</b>' + (s.soldCount || 0) + ' / ' + s.totalSeats + '（上座率 ' + rate + '%）</p>' +
             '<p><b>余票：</b>' + s.remainingSeats + '</p>';
         document.getElementById('detailModal').classList.add('show');

@@ -12,4 +12,6 @@ public class ScheduleSeat {
     private Long orderId;
     private LocalDateTime lockTime;
     private Long lockUserId;
+    /** 派生字段，不落库：锁定到期时间，供前端倒计时 */
+    private LocalDateTime lockExpireTime;
 }

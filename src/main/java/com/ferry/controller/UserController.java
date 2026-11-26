@@ -1,6 +1,7 @@
 package com.ferry.controller;
 
 import com.ferry.common.LoginUser;
+import com.ferry.common.PageResult;
 import com.ferry.common.RequireRole;
 import com.ferry.common.Result;
 import com.ferry.entity.User;
@@ -66,15 +67,15 @@ public class UserController {
     /** 用户列表（管理员） */
     @RequireRole("ADMIN")
     @GetMapping("/api/users")
-    public Result<Map<String, Object>> list(@RequestParam(defaultValue = "1") int page,
-                                            @RequestParam(defaultValue = "10") int size,
-                                            @RequestParam(required = false) String username,
-                                            @RequestParam(required = false) String role,
-                                            @RequestParam(required = false) String name) {
-        Map<String, Object> data = new HashMap<>();
-        data.put("list", userService.search(username, role, name, page, size));
-        data.put("total", userService.count(username, role, name));
-        return Result.ok(data);
+    public Result<PageResult<User>> list(@RequestParam(defaultValue = "1") int page,
+                                         @RequestParam(defaultValue = "10") int size,
+                                         @RequestParam(required = false) String username,
+                                         @RequestParam(required = false) String role,
+                                         @RequestParam(required = false) String name) {
+        return Result.ok(PageResult.of(
+                userService.search(username, role, name, page, size),
+                userService.count(username, role, name),
+                page, size));
     }
 
     /** 新增用户（售票员/管理员） */

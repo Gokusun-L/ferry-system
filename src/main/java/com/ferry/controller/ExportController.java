@@ -38,11 +38,11 @@ public class ExportController {
         List<List<Object>> rows = new ArrayList<>();
         for (Map<String, Object> row : data) {
             rows.add(List.of(
-                    String.valueOf(row.get("stat_date")),
-                    row.get("sale_count"),
-                    row.get("refund_count"),
-                    row.get("sale_amount"),
-                    row.get("refund_amount")));
+                    String.valueOf(row.get("statDate")),
+                    row.get("saleCount"),
+                    row.get("refundCount"),
+                    row.get("saleAmount"),
+                    row.get("refundAmount")));
         }
         writeExcel(response, "售票统计", head, rows);
     }
@@ -55,7 +55,7 @@ public class ExportController {
         List<List<String>> head = List.of(List.of("航线"), List.of("售票量"), List.of("售票金额"));
         List<List<Object>> rows = new ArrayList<>();
         for (Map<String, Object> row : data) {
-            rows.add(List.of(String.valueOf(row.get("route_name")), row.get("sale_count"), row.get("sale_amount")));
+            rows.add(List.of(String.valueOf(row.get("routeName")), row.get("saleCount"), row.get("saleAmount")));
         }
         writeExcel(response, "航线统计", head, rows);
     }
@@ -68,7 +68,7 @@ public class ExportController {
         List<List<String>> head = List.of(List.of("售票员"), List.of("售票量"), List.of("售票金额"));
         List<List<Object>> rows = new ArrayList<>();
         for (Map<String, Object> row : data) {
-            rows.add(List.of(String.valueOf(row.get("seller_name")), row.get("sale_count"), row.get("sale_amount")));
+            rows.add(List.of(String.valueOf(row.get("sellerName")), row.get("saleCount"), row.get("saleAmount")));
         }
         writeExcel(response, "售票员业绩", head, rows);
     }
@@ -82,11 +82,11 @@ public class ExportController {
         List<List<Object>> rows = new ArrayList<>();
         for (Map<String, Object> row : data) {
             rows.add(List.of(
-                    String.valueOf(row.get("route_name")),
-                    String.valueOf(row.get("depart_time")),
-                    String.valueOf(row.get("ship_name")),
-                    row.get("total_seats"),
-                    row.get("sold_count"),
+                    String.valueOf(row.get("routeName")),
+                    String.valueOf(row.get("departTime")),
+                    String.valueOf(row.get("shipName")),
+                    row.get("totalSeats"),
+                    row.get("soldCount"),
                     row.get("occupancy")));
         }
         writeExcel(response, "上座率统计", head, rows);

@@ -1,6 +1,7 @@
 package com.ferry.controller;
 
 import com.ferry.common.BizException;
+import com.ferry.common.PageResult;
 import com.ferry.common.RequireRole;
 import com.ferry.common.Result;
 import com.ferry.entity.Route;
@@ -34,15 +35,15 @@ public class ManageController {
 
     // ===== 航线 =====
     @GetMapping("/routes")
-    public Result<Map<String, Object>> listRoutes(@RequestParam(defaultValue = "1") int page,
-                                                  @RequestParam(defaultValue = "10") int size,
-                                                  @RequestParam(required = false) String routeName,
-                                                  @RequestParam(required = false) String departPort,
-                                                  @RequestParam(required = false) String arrivePort) {
-        Map<String, Object> data = new HashMap<>();
-        data.put("list", routeService.search(routeName, departPort, arrivePort, page, size));
-        data.put("total", routeService.count(routeName, departPort, arrivePort));
-        return Result.ok(data);
+    public Result<PageResult<Route>> listRoutes(@RequestParam(defaultValue = "1") int page,
+                                                @RequestParam(defaultValue = "10") int size,
+                                                @RequestParam(required = false) String routeName,
+                                                @RequestParam(required = false) String departPort,
+                                                @RequestParam(required = false) String arrivePort) {
+        return Result.ok(PageResult.of(
+                routeService.search(routeName, departPort, arrivePort, page, size),
+                routeService.count(routeName, departPort, arrivePort),
+                page, size));
     }
 
     @GetMapping("/routes/all")
@@ -74,8 +75,13 @@ public class ManageController {
 
     // ===== 船舶 =====
     @GetMapping("/ships")
-    public Result<List<Ship>> listShips(@RequestParam(required = false) String shipName) {
-        return Result.ok(shipService.search(shipName));
+    public Result<PageResult<Ship>> listShips(@RequestParam(defaultValue = "1") int page,
+                                              @RequestParam(defaultValue = "10") int size,
+                                              @RequestParam(required = false) String shipName) {
+        return Result.ok(PageResult.of(
+                shipService.search(shipName, page, size),
+                shipService.count(shipName),
+                page, size));
     }
 
     @GetMapping("/ships/all")
@@ -107,16 +113,16 @@ public class ManageController {
 
     // ===== 班次 =====
     @GetMapping("/schedules")
-    public Result<Map<String, Object>> listSchedules(@RequestParam(defaultValue = "1") int page,
-                                                     @RequestParam(defaultValue = "10") int size,
-                                                     @RequestParam(required = false) Long routeId,
-                                                     @RequestParam(required = false) Long shipId,
-                                                     @RequestParam(required = false) String date,
-                                                     @RequestParam(required = false) String status) {
-        Map<String, Object> data = new HashMap<>();
-        data.put("list", scheduleService.search(routeId, shipId, date, status, page, size));
-        data.put("total", scheduleService.count(routeId, shipId, date, status));
-        return Result.ok(data);
+    public Result<PageResult<Schedule>> listSchedules(@RequestParam(defaultValue = "1") int page,
+                                                      @RequestParam(defaultValue = "10") int size,
+                                                      @RequestParam(required = false) Long routeId,
+                                                      @RequestParam(required = false) Long shipId,
+                                                      @RequestParam(required = false) String date,
+                                                      @RequestParam(required = false) String status) {
+        return Result.ok(PageResult.of(
+                scheduleService.search(routeId, shipId, date, status, page, size),
+                scheduleService.count(routeId, shipId, date, status),
+                page, size));
     }
 
     @GetMapping("/schedules/{id}")

@@ -3,8 +3,13 @@
 <body>
 <div id="pageContent">
     <div class="card">
-        <h3>退票处理</h3>
-        <p style="color:#64748b;margin-bottom:12px;">输入订单号查询已支付订单，为乘客办理退票。</p>
+        <div class="card-head">
+            <div class="icon-chip">↩️</div>
+            <div class="head-text">
+                <h3>退票处理</h3>
+                <p class="card-desc">输入订单号查询已支付订单，为乘客办理退票</p>
+            </div>
+        </div>
         <div class="toolbar">
             <div class="form-group"><input type="text" id="orderNo" placeholder="输入订单号" style="min-width:300px;"></div>
             <button class="btn btn-primary" onclick="searchOrder()">查询</button>

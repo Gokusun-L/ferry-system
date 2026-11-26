@@ -2,8 +2,34 @@
 <html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: content(~{::body})}">
 <body>
 <div id="pageContent">
-    <h2 th:text="'欢迎，' + ${user.name}">欢迎</h2>
-    <p style="margin-top:12px;color:#64748b;">请从左侧菜单选择功能模块。</p>
+    <div class="hero-banner">
+        <div class="hero-text">
+            <h2 th:text="'你好，' + ${user.name} + '！'">你好！</h2>
+            <p>欢迎回来，管理员。在这里掌握全局运营数据，统筹航线、班次与售票业务。</p>
+        </div>
+    </div>
+    <div class="quick-grid">
+        <a th:href="@{/admin/users}" class="quick-card">
+            <div class="icon-chip">👥</div>
+            <div class="q-title">用户管理</div>
+            <div class="q-desc">维护乘客、售票员及管理员账号</div>
+        </a>
+        <a th:href="@{/admin/routes}" class="quick-card">
+            <div class="icon-chip">🗺️</div>
+            <div class="q-title">航线管理</div>
+            <div class="q-desc">配置港口之间的轮渡航线信息</div>
+        </a>
+        <a th:href="@{/admin/schedules}" class="quick-card">
+            <div class="icon-chip">🕐</div>
+            <div class="q-title">班次管理</div>
+            <div class="q-desc">安排与调整航线班次时刻</div>
+        </a>
+        <a th:href="@{/admin/stats}" class="quick-card">
+            <div class="icon-chip">📊</div>
+            <div class="q-title">统计报表</div>
+            <div class="q-desc">查看售票与运营数据汇总</div>
+        </a>
+    </div>
 </div>
 </body>
 </html>

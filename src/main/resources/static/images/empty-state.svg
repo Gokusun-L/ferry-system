@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#eef6ff"/>
+      <stop offset="1" stop-color="#dbeafe"/>
+    </linearGradient>
+    <linearGradient id="sea" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#7cc4e8"/>
+      <stop offset="1" stop-color="#3b8fc4"/>
+    </linearGradient>
+    <linearGradient id="boat" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#dbeafe"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="800" height="800" rx="36" fill="url(#bg)"/>
+
+  <!-- 云 -->
+  <g fill="#ffffff">
+    <ellipse cx="200" cy="150" rx="90" ry="30"/>
+    <ellipse cx="260" cy="132" rx="58" ry="22"/>
+    <ellipse cx="600" cy="110" rx="76" ry="26"/>
+    <ellipse cx="652" cy="96" rx="46" ry="18"/>
+  </g>
+
+  <!-- 太阳 -->
+  <circle cx="620" cy="260" r="52" fill="#ffe9b8"/>
+  <circle cx="620" cy="260" r="72" fill="#ffe9b8" opacity="0.35"/>
+
+  <!-- 海面 -->
+  <path d="M0 520 Q 200 496 400 520 T 800 520 V 800 H 0 Z" fill="url(#sea)"/>
+  <path d="M0 580 Q 210 558 420 580 T 800 580 V 800 H 0 Z" fill="#2f7fb4" opacity="0.85"/>
+  <path d="M0 650 Q 220 630 440 650 T 800 650 V 800 H 0 Z" fill="#1f6396" opacity="0.9"/>
+
+  <!-- 码头栈桥 -->
+  <g>
+    <rect x="520" y="430" width="200" height="26" rx="13" fill="#c98a4b"/>
+    <rect x="520" y="430" width="200" height="10" rx="5" fill="#e0a25f"/>
+    <rect x="544" y="456" width="16" height="74" rx="5" fill="#a96b35"/>
+    <rect x="680" y="456" width="16" height="74" rx="5" fill="#a96b35"/>
+    <rect x="612" y="456" width="16" height="50" rx="5" fill="#b97a3f"/>
+  </g>
+
+  <!-- 小船 -->
+  <g>
+    <path d="M140 470 L420 470 L380 560 L180 560 Z" fill="url(#boat)"/>
+    <rect x="140" y="464" width="280" height="10" rx="5" fill="#bcd9f5"/>
+    <rect x="215" y="398" width="130" height="70" rx="10" fill="#ffffff"/>
+    <rect x="215" y="398" width="130" height="8" rx="4" fill="#c7def7"/>
+    <rect x="300" y="368" width="30" height="34" rx="6" fill="#ffffff"/>
+    <rect x="302" y="362" width="26" height="8" rx="4" fill="#9fc7ec"/>
+    <g fill="#9fc7ec">
+      <circle cx="240" cy="424" r="6"/>
+      <circle cx="268" cy="424" r="6"/>
+      <circle cx="296" cy="424" r="6"/>
+    </g>
+  </g>
+
+  <!-- 小船倒影 -->
+  <g opacity="0.18">
+    <rect x="190" y="562" width="180" height="20" rx="10" fill="#0e3a5c"/>
+  </g>
+
+  <!-- 海鸥 -->
+  <g stroke="#7ea3c8" stroke-width="5" fill="none" stroke-linecap="round">
+    <path d="M120 300 q 16 -12 32 0 q 16 -12 32 0"/>
+    <path d="M470 210 q 14 -10 28 0 q 14 -10 28 0" stroke-width="4"/>
+  </g>
+</svg>

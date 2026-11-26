@@ -1,10 +1,34 @@
-// 通用工具函数
+// 通用请求：统一处理"未登录被重定向到登录页"的情况
+// 后端接口约定：HTTP 400/500 仍返回 JSON（{code,msg,data}），业务结果一律看 code
 function api(url, method, body) {
     return fetch(url, {
         method: method || 'GET',
         headers: {'Content-Type': 'application/json'},
+        credentials: 'same-origin',
         body: body ? JSON.stringify(body) : undefined
-    }).then(r => r.json());
+    }).then(function (r) {
+        var contentType = r.headers.get('content-type') || '';
+        if (contentType.indexOf('application/json') === -1) {
+            // 拿到 HTML 说明会话已失效被重定向，直接跳登录页，避免 JSON 解析异常
+            window.location.href = '/login';
+            return Promise.reject(new Error('未登录或会话已失效'));
+        }
+        return r.json();
+    });
+}
+
+// 只取 data 的简化版：失败时抛出带 msg 的错误，供 try/catch 或 .catch 使用
+function apiData(url, method, body) {
+    return api(url, method, body).then(function (res) {
+        if (res.code === 401) {
+            window.location.href = '/login';
+            throw new Error(res.msg || '未登录');
+        }
+        if (res.code !== 0) {
+            throw new Error(res.msg || '操作失败');
+        }
+        return res.data;
+    });
 }
 
 function logout() {

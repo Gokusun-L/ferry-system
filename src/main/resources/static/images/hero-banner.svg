@@ -1,0 +1,97 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#9fcdf8"/>
+      <stop offset="0.55" stop-color="#dbeafe"/>
+      <stop offset="0.82" stop-color="#fcd9a8"/>
+      <stop offset="1" stop-color="#f8b878"/>
+    </linearGradient>
+    <radialGradient id="sun" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#fff7d6"/>
+      <stop offset="0.55" stop-color="#ffd98a"/>
+      <stop offset="1" stop-color="#ffb45e" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="sea" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1e7ba8"/>
+      <stop offset="1" stop-color="#0b3d61"/>
+    </linearGradient>
+    <linearGradient id="hull" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#123253"/>
+      <stop offset="1" stop-color="#071827"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1600" height="900" fill="url(#sky)"/>
+
+  <!-- 云 -->
+  <g fill="#ffffff" opacity="0.85">
+    <ellipse cx="300" cy="170" rx="120" ry="34"/>
+    <ellipse cx="380" cy="150" rx="80" ry="26"/>
+    <ellipse cx="980" cy="120" rx="100" ry="28"/>
+    <ellipse cx="1060" cy="104" rx="66" ry="22"/>
+    <ellipse cx="1410" cy="220" rx="110" ry="30"/>
+  </g>
+
+  <!-- 太阳 -->
+  <circle cx="1180" cy="620" r="240" fill="url(#sun)"/>
+  <circle cx="1180" cy="620" r="86" fill="#ffe9b8"/>
+
+  <!-- 远岸城市剪影 -->
+  <g fill="#7ea3c8" opacity="0.55">
+    <rect x="80" y="520" width="46" height="120" rx="6"/>
+    <rect x="150" y="470" width="60" height="170" rx="6"/>
+    <rect x="236" y="540" width="40" height="100" rx="6"/>
+    <rect x="310" y="490" width="54" height="150" rx="6"/>
+    <rect x="400" y="560" width="36" height="80" rx="6"/>
+    <rect x="880" y="500" width="50" height="140" rx="6"/>
+    <rect x="960" y="460" width="44" height="180" rx="6"/>
+    <rect x="1040" y="530" width="56" height="110" rx="6"/>
+  </g>
+
+  <!-- 海面 -->
+  <path d="M0 640 Q 400 616 800 640 T 1600 640 V 900 H 0 Z" fill="url(#sea)"/>
+  <path d="M0 700 Q 420 676 840 700 T 1600 700 V 900 H 0 Z" fill="#0d4a72" opacity="0.9"/>
+  <path d="M0 770 Q 430 748 860 770 T 1600 770 V 900 H 0 Z" fill="#08304e" opacity="0.95"/>
+
+  <!-- 太阳倒影 -->
+  <g opacity="0.35">
+    <rect x="1150" y="640" width="60" height="52" rx="26" fill="#ffcf7d"/>
+    <rect x="1140" y="692" width="80" height="40" rx="20" fill="#ffb45e" opacity="0.8"/>
+    <rect x="1146" y="732" width="68" height="32" rx="16" fill="#ff9638" opacity="0.6"/>
+  </g>
+
+  <!-- 渡轮（左侧前景） -->
+  <g>
+    <!-- 烟囱 -->
+    <path d="M412 452 L412 398 L456 398 L456 452 Z" fill="#0c1b31"/>
+    <rect x="408" y="394" width="52" height="8" rx="4" fill="#14294a"/>
+    <!-- 上层建筑 -->
+    <rect x="330" y="452" width="240" height="96" rx="10" fill="#0e1f3a"/>
+    <rect x="330" y="452" width="240" height="8" rx="4" fill="#1c3760"/>
+    <!-- 驾驶室 -->
+    <rect x="500" y="422" width="64" height="38" rx="7" fill="#0e1f3a"/>
+    <rect x="507" y="428" width="50" height="22" rx="4" fill="#9fd7f2" opacity="0.92"/>
+    <!-- 窗 -->
+    <g fill="#ffd98a" opacity="0.95">
+      <circle cx="356" cy="480" r="6"/><circle cx="386" cy="480" r="6"/><circle cx="416" cy="480" r="6"/><circle cx="446" cy="480" r="6"/><circle cx="476" cy="480" r="6"/>
+      <circle cx="356" cy="512" r="6"/><circle cx="386" cy="512" r="6"/><circle cx="416" cy="512" r="6"/><circle cx="446" cy="512" r="6"/><circle cx="476" cy="512" r="6"/>
+    </g>
+    <!-- 船体 -->
+    <path d="M236 552 L636 552 L580 690 L292 690 Z" fill="url(#hull)"/>
+    <rect x="236" y="548" width="400" height="10" rx="5" fill="#1e3a63"/>
+    <!-- 船体窗 -->
+    <g fill="#8fd3ef" opacity="0.85">
+      <circle cx="330" cy="600" r="6"/><circle cx="368" cy="600" r="6"/><circle cx="406" cy="600" r="6"/>
+      <circle cx="444" cy="600" r="6"/><circle cx="482" cy="600" r="6"/><circle cx="520" cy="600" r="6"/>
+    </g>
+    <!-- 船头浪 -->
+    <path d="M672 640 q 42 6 82 -2 q -32 22 -62 30 q 28 8 52 2" stroke="#cdeafc" stroke-width="6" fill="none" stroke-linecap="round" opacity="0.7"/>
+  </g>
+
+  <!-- 海鸥 -->
+  <g stroke="#ffffff" stroke-width="5" fill="none" stroke-linecap="round" opacity="0.9">
+    <path d="M760 300 q 20 -14 40 0 q 20 -14 40 0"/>
+    <path d="M880 340 q 16 -11 32 0 q 16 -11 32 0" stroke-width="4"/>
+    <path d="M600 250 q 16 -11 32 0 q 16 -11 32 0" stroke-width="4"/>
+  </g>
+</svg>

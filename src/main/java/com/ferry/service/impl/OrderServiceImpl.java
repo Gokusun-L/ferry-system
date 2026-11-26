@@ -79,7 +79,13 @@ public class OrderServiceImpl implements OrderService {
     @Override
     public List<ScheduleSeat> listSeatMap(Long scheduleId) {
         getSchedule(scheduleId);
-        return scheduleSeatDao.listBySchedule(scheduleId);
+        List<ScheduleSeat> seats = scheduleSeatDao.listBySchedule(scheduleId);
+        for (ScheduleSeat seat : seats) {
+            if ("LOCKED".equals(seat.getStatus()) && seat.getLockTime() != null) {
+                seat.setLockExpireTime(seat.getLockTime().plusMinutes(LOCK_MINUTES));
+            }
+        }
+        return seats;
     }
 
     @Override

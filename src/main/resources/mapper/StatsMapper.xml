@@ -2,13 +2,15 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.ferry.dao.StatsDao">
 
+    <!-- 统计接口统一输出 camelCase 字段，时间统一 ISO 格式（yyyy-MM-ddTHH:mm:ss），与实体接口保持一致 -->
+
     <!-- 按日统计：售票以支付时间为准，退票以退款时间为准 -->
     <select id="statsByDate" resultType="map">
-        SELECT d.stat_date,
-               COALESCE(SUM(CASE WHEN d.kind = 'SALE' THEN d.cnt ELSE 0 END), 0)   AS sale_count,
-               COALESCE(SUM(CASE WHEN d.kind = 'SALE' THEN d.amt ELSE 0 END), 0)   AS sale_amount,
-               COALESCE(SUM(CASE WHEN d.kind = 'REFUND' THEN d.cnt ELSE 0 END), 0) AS refund_count,
-               COALESCE(SUM(CASE WHEN d.kind = 'REFUND' THEN d.amt ELSE 0 END), 0) AS refund_amount
+        SELECT DATE_FORMAT(d.stat_date, '%Y-%m-%d') AS statDate,
+               COALESCE(SUM(CASE WHEN d.kind = 'SALE' THEN d.cnt ELSE 0 END), 0)   AS saleCount,
+               COALESCE(SUM(CASE WHEN d.kind = 'SALE' THEN d.amt ELSE 0 END), 0)   AS saleAmount,
+               COALESCE(SUM(CASE WHEN d.kind = 'REFUND' THEN d.cnt ELSE 0 END), 0) AS refundCount,
+               COALESCE(SUM(CASE WHEN d.kind = 'REFUND' THEN d.amt ELSE 0 END), 0) AS refundAmount
         FROM (
             SELECT DATE(o.pay_time) AS stat_date, 'SALE' AS kind, COUNT(*) AS cnt, SUM(t.price) AS amt
             FROM ticket t
@@ -32,10 +34,10 @@
     <!-- 按日/周/月统计收入与退票 -->
     <select id="statsByPeriod" resultType="map">
         SELECT d.period,
-               COALESCE(SUM(CASE WHEN d.kind = 'SALE' THEN d.cnt ELSE 0 END), 0)   AS sale_count,
-               COALESCE(SUM(CASE WHEN d.kind = 'SALE' THEN d.amt ELSE 0 END), 0)   AS sale_amount,
-               COALESCE(SUM(CASE WHEN d.kind = 'REFUND' THEN d.cnt ELSE 0 END), 0) AS refund_count,
-               COALESCE(SUM(CASE WHEN d.kind = 'REFUND' THEN d.amt ELSE 0 END), 0) AS refund_amount
+               COALESCE(SUM(CASE WHEN d.kind = 'SALE' THEN d.cnt ELSE 0 END), 0)   AS saleCount,
+               COALESCE(SUM(CASE WHEN d.kind = 'SALE' THEN d.amt ELSE 0 END), 0)   AS saleAmount,
+               COALESCE(SUM(CASE WHEN d.kind = 'REFUND' THEN d.cnt ELSE 0 END), 0) AS refundCount,
+               COALESCE(SUM(CASE WHEN d.kind = 'REFUND' THEN d.amt ELSE 0 END), 0) AS refundAmount
         FROM (
             SELECT
             <choose>
@@ -57,7 +59,7 @@
                 <when test="groupBy == 'week'">DATE_FORMAT(rf.refund_time, '%x-W%v')</when>
                 <otherwise>DATE_FORMAT(rf.refund_time, '%Y-%m-%d')</otherwise>
             </choose> AS period,
-            'REFUND' AS kind, COUNT(*) AS cnt, SUM(rf.refund_amount) AS amt
+            'REFUND', COUNT(*), SUM(rf.refund_amount)
             FROM refund rf
             WHERE rf.refund_time &gt;= #{start}
               AND rf.refund_time &lt; DATE_ADD(#{end}, INTERVAL 1 DAY)
@@ -70,9 +72,9 @@
 
     <!-- 航线售票统计（按票，支付时间口径） -->
     <select id="statsByRoute" resultType="map">
-        SELECT r.route_name,
-               COUNT(t.id)                    AS sale_count,
-               COALESCE(SUM(t.price), 0)      AS sale_amount
+        SELECT r.route_name                AS routeName,
+               COUNT(t.id)                 AS saleCount,
+               COALESCE(SUM(t.price), 0)   AS saleAmount
         FROM ticket t
         JOIN orders o ON t.order_id = o.id
         JOIN schedule s ON t.schedule_id = s.id
@@ -82,14 +84,15 @@
           AND o.pay_time &lt; DATE_ADD(#{end}, INTERVAL 1 DAY)
           AND r.deleted = 0
         GROUP BY r.id, r.route_name
-        ORDER BY sale_amount DESC
+        ORDER BY saleCount DESC
     </select>
 
     <!-- 班次售票统计（按发船日期筛选，按票计数；退票数按当前已退票统计） -->
     <select id="statsBySchedule" resultType="map">
-        SELECT s.id AS schedule_id, r.route_name, s.depart_time,
-               SUM(CASE WHEN t.status IN ('PAID', 'CHECKED') THEN 1 ELSE 0 END) AS sale_count,
-               SUM(CASE WHEN t.status = 'REFUNDED' THEN 1 ELSE 0 END)         AS refund_count,
+        SELECT s.id AS scheduleId, r.route_name AS routeName,
+               DATE_FORMAT(s.depart_time, '%Y-%m-%dT%H:%i:%s') AS departTime,
+               SUM(CASE WHEN t.status IN ('PAID', 'CHECKED') THEN 1 ELSE 0 END) AS saleCount,
+               SUM(CASE WHEN t.status = 'REFUNDED' THEN 1 ELSE 0 END)         AS refundCount,
                COALESCE(SUM(CASE WHEN t.status IN ('PAID', 'CHECKED') THEN t.price ELSE 0 END), 0) AS income
         FROM schedule s
         JOIN route r ON s.route_id = r.id
@@ -99,15 +102,15 @@
           AND s.depart_time &gt;= #{start}
           AND s.depart_time &lt; DATE_ADD(#{end}, INTERVAL 1 DAY)
         GROUP BY s.id, r.route_name, s.depart_time
-        HAVING sale_count &gt; 0 OR refund_count &gt; 0
+        HAVING saleCount &gt; 0 OR refundCount &gt; 0
         ORDER BY s.depart_time
     </select>
 
     <!-- 售票员业绩（按票，支付时间口径） -->
     <select id="statsBySeller" resultType="map">
-        SELECT u.id AS seller_id, u.name AS seller_name,
-               COUNT(t.id)               AS sale_count,
-               COALESCE(SUM(t.price), 0) AS sale_amount
+        SELECT u.id AS sellerId, u.name AS sellerName,
+               COUNT(t.id)               AS saleCount,
+               COALESCE(SUM(t.price), 0) AS saleAmount
         FROM user u
         LEFT JOIN orders o ON o.seller_id = u.id
             AND o.pay_time &gt;= #{start}
@@ -115,13 +118,13 @@
         LEFT JOIN ticket t ON t.order_id = o.id AND t.status IN ('PAID', 'CHECKED')
         WHERE u.role = 'SELLER'
         GROUP BY u.id, u.name
-        ORDER BY sale_amount DESC
+        ORDER BY saleCount DESC
     </select>
 
     <select id="statsSingleSeller" resultType="map">
-        SELECT u.id AS seller_id, u.name AS seller_name,
-               COUNT(t.id)               AS sale_count,
-               COALESCE(SUM(t.price), 0) AS sale_amount
+        SELECT u.id AS sellerId, u.name AS sellerName,
+               COUNT(t.id)               AS saleCount,
+               COALESCE(SUM(t.price), 0) AS saleAmount
         FROM user u
         LEFT JOIN orders o ON o.seller_id = u.id
             AND o.pay_time &gt;= #{start}
@@ -133,8 +136,10 @@
 
     <!-- 班次上座率：按有效票数重新计算，避免 sold_count 漂移 -->
     <select id="scheduleOccupancy" resultType="map">
-        SELECT s.id AS schedule_id, r.route_name, s.depart_time, sh.ship_name, sh.total_seats,
-               COUNT(t.id) AS sold_count,
+        SELECT s.id AS scheduleId, r.route_name AS routeName,
+               DATE_FORMAT(s.depart_time, '%Y-%m-%dT%H:%i:%s') AS departTime,
+               sh.ship_name AS shipName, sh.total_seats AS totalSeats,
+               COUNT(t.id) AS soldCount,
                ROUND(COUNT(t.id) / sh.total_seats * 100, 2) AS occupancy
         FROM schedule s
         JOIN route r ON s.route_id = r.id
@@ -147,7 +152,7 @@
 
     <!-- 航线平均上座率 -->
     <select id="routeOccupancy" resultType="map">
-        SELECT r.route_name, ROUND(AVG(x.occ), 2) AS avg_occupancy
+        SELECT r.route_name, ROUND(AVG(x.occ), 2) AS avgOccupancy
         FROM (
             SELECT s.id, s.route_id, COUNT(t.id) / sh.total_seats * 100 AS occ
             FROM schedule s
@@ -159,12 +164,12 @@
         JOIN route r ON x.route_id = r.id
         WHERE r.deleted = 0
         GROUP BY r.id, r.route_name
-        ORDER BY avg_occupancy DESC
+        ORDER BY avgOccupancy DESC
     </select>
 
     <!-- 早/午/晚班上座率对比 -->
     <select id="occupancyByPeriod" resultType="map">
-        SELECT x.period, ROUND(AVG(x.occ), 2) AS avg_occupancy, COUNT(*) AS schedule_count
+        SELECT x.period, ROUND(AVG(x.occ), 2) AS avgOccupancy, COUNT(*) AS scheduleCount
         FROM (
             SELECT CASE
                        WHEN HOUR(s.depart_time) &lt; 12 THEN '早班(06-12)'
@@ -184,8 +189,10 @@
 
     <!-- 低上座率预警：仅看在售/已发船班次 -->
     <select id="lowOccupancy" resultType="map">
-        SELECT s.id AS schedule_id, r.route_name, s.depart_time, sh.total_seats,
-               COUNT(t.id) AS sold_count,
+        SELECT s.id AS scheduleId, r.route_name AS routeName,
+               DATE_FORMAT(s.depart_time, '%Y-%m-%dT%H:%i:%s') AS departTime,
+               sh.total_seats AS totalSeats,
+               COUNT(t.id) AS soldCount,
                ROUND(COUNT(t.id) / sh.total_seats * 100, 2) AS occupancy
         FROM schedule s
         JOIN route r ON s.route_id = r.id
@@ -194,17 +201,20 @@
         WHERE s.deleted = 0 AND s.status IN ('SELLING', 'DEPARTED')
         GROUP BY s.id, r.route_name, s.depart_time, sh.total_seats
         HAVING occupancy &lt; #{threshold}
-        ORDER BY occupancy, s.depart_time
+        ORDER BY occupancy, departTime
     </select>
 
     <!-- 收入汇总（按票）：总收入、退票金额、手续费、净收入、退票率 -->
     <select id="incomeSummary" resultType="map">
-        SELECT s.total_income, s.sale_count,
-               r.refund_loss, r.refund_count, r.refund_fee,
-               (s.total_income - r.refund_loss) AS net_income,
+        SELECT s.total_income  AS totalIncome,
+               s.sale_count    AS saleCount,
+               r.refund_loss   AS refundLoss,
+               r.refund_count  AS refundCount,
+               r.refund_fee    AS refundFee,
+               (s.total_income - r.refund_loss) AS netIncome,
                CASE WHEN s.sale_count + r.refund_count = 0 THEN 0
                     ELSE ROUND(r.refund_count / (s.sale_count + r.refund_count) * 100, 2)
-               END AS refund_rate
+               END AS refundRate
         FROM (
             SELECT COALESCE(SUM(t.price), 0) AS total_income, COUNT(*) AS sale_count
             FROM ticket t
@@ -227,15 +237,15 @@
     <!-- 退票原因分布 -->
     <select id="refundStats" resultType="map">
         SELECT COALESCE(NULLIF(reason, ''), '未填写') AS reason,
-               COUNT(*)                    AS refund_count,
-               COALESCE(SUM(refund_amount), 0) AS refund_amount,
-               COALESCE(SUM(fee), 0)       AS fee_amount
+               COUNT(*)                          AS refundCount,
+               COALESCE(SUM(refund_amount), 0)   AS refundAmount,
+               COALESCE(SUM(fee), 0)             AS feeAmount
         FROM refund
         WHERE refund_time &gt;= #{start}
           AND refund_time &lt; DATE_ADD(#{end}, INTERVAL 1 DAY)
           AND biz_type = 'REFUND'
         GROUP BY COALESCE(NULLIF(reason, ''), '未填写')
-        ORDER BY refund_count DESC
+        ORDER BY refundCount DESC
     </select>
 
 </mapper>

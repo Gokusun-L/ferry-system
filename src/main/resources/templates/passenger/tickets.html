@@ -3,7 +3,13 @@
 <body>
 <div id="pageContent">
     <div class="card">
-        <h3>我的船票</h3>
+        <div class="card-head">
+            <div class="icon-chip">🎟️</div>
+            <div class="head-text">
+                <h3>我的船票</h3>
+                <p class="card-desc">查看已购船票与电子票面</p>
+            </div>
+        </div>
         <table>
             <thead><tr><th>船票号</th><th>航线</th><th>发船时间</th><th>座位</th><th>乘客</th><th>状态</th><th>操作</th></tr></thead>
             <tbody id="ticketTbody"></tbody>
@@ -15,7 +21,9 @@
     <div class="modal" style="text-align:center;">
         <h3>电子船票</h3>
         <div id="ticketContent" style="border:2px dashed #333;padding:20px;"></div>
-        <button class="btn" onclick="closeModal('ticketModal')">关闭</button>
+        <div class="modal-actions">
+            <button class="btn" onclick="closeModal('ticketModal')">关闭</button>
+        </div>
     </div>
 </div>
 
@@ -25,7 +33,7 @@ function loadTickets() {
         var html = '';
         res.data.forEach(t => {
             html += '<tr><td>' + t.ticketNo + '</td><td>' + t.routeName + '</td><td>' + (t.departTime || '') + '</td>' +
-                '<td>' + t.seatNo + '</td><td>' + t.passengerName + '</td><td>' + ticketStatusText(t.status, t.departTime) + '</td>' +
+                '<td>' + t.seatNo + '</td><td>' + t.passengerName + '</td><td>' + ticketStatusPill(t.status, t.departTime) + '</td>' +
                 '<td><button class="btn btn-sm btn-primary" onclick="showTicket(' + t.id + ')">查看</button></td></tr>';
         });
         document.getElementById('ticketTbody').innerHTML = html;
@@ -40,7 +48,7 @@ function showTicket(id) {
             '<p>乘客：' + t.passengerName + '</p><p>座位：' + t.seatNo + '</p>' +
             '<p>发船时间：' + (t.departTime || '') + '</p>' +
             '<p>票号：' + t.ticketNo + '</p>' +
-            '<p>状态：' + ticketStatusText(t.status, t.departTime) + '</p>' +
+            '<p>状态：' + ticketStatusPill(t.status, t.departTime) + '</p>' +
             '<div style="margin-top:10px;font-size:40px;">▦▦▦▦▦▦</div>' +
             '<p style="font-size:12px;color:#999;">[ 二维码占位 ]</p>';
         document.getElementById('ticketContent').innerHTML = html;
@@ -48,6 +56,11 @@ function showTicket(id) {
     });
 }
 function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+function ticketStatusPill(s, departTime) {
+    var cls = {PAID: 'pill-info', CHECKED: 'pill-success', FINISHED: 'pill-success',
+        CANCELLED: 'pill-muted', REFUNDED: 'pill-muted', RESCHEDULED: 'pill-info'}[s] || 'pill-muted';
+    return '<span class="pill ' + cls + '">' + ticketStatusText(s, departTime) + '</span>';
+}
 loadTickets();
 </script>
 </body>

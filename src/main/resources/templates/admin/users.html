@@ -3,7 +3,13 @@
 <body>
 <div id="pageContent">
     <div class="card">
-        <h3>用户管理</h3>
+        <div class="card-head">
+            <div class="icon-chip">👥</div>
+            <div class="head-text">
+                <h3>用户管理</h3>
+                <p class="card-desc">管理平台用户账号、角色与启停状态</p>
+            </div>
+        </div>
         <div class="toolbar">
             <div class="form-group"><input type="text" id="searchUsername" placeholder="用户名"></div>
             <div class="form-group">
@@ -39,8 +45,10 @@
             <label>角色</label>
             <select id="cRole"><option value="SELLER">售票员</option><option value="ADMIN">管理员</option></select>
         </div>
-        <button class="btn btn-primary" onclick="doCreate()">确定</button>
-        <button class="btn" onclick="closeModal('createModal')">取消</button>
+        <div class="modal-actions">
+            <button class="btn btn-primary" onclick="doCreate()">确定</button>
+            <button class="btn" onclick="closeModal('createModal')">取消</button>
+        </div>
     </div>
 </div>
 
@@ -60,8 +68,10 @@
                 <option value="ADMIN">管理员</option>
             </select>
         </div>
-        <button class="btn btn-primary" onclick="doEdit()">保存</button>
-        <button class="btn" onclick="closeModal('editModal')">取消</button>
+        <div class="modal-actions">
+            <button class="btn btn-primary" onclick="doEdit()">保存</button>
+            <button class="btn" onclick="closeModal('editModal')">取消</button>
+        </div>
     </div>
 </div>
 

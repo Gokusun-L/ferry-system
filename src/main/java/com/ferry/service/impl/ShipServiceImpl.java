@@ -21,8 +21,15 @@ public class ShipServiceImpl implements ShipService {
     private final ShipSeatDao shipSeatDao;
 
     @Override
-    public List<Ship> search(String shipName) {
-        return shipDao.search(shipName);
+    public List<Ship> search(String shipName, int page, int size) {
+        int p = Math.max(page, 1);
+        int s = Math.min(Math.max(size, 1), 100);
+        return shipDao.searchPage(shipName, (p - 1) * s, s);
+    }
+
+    @Override
+    public int count(String shipName) {
+        return shipDao.count(shipName);
     }
 
     @Override
